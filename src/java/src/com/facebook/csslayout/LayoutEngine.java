@@ -231,19 +231,30 @@ public class LayoutEngine {
     // parameters don't change.
     layoutContext.currentGenerationCount++;
 
-    // If the caller didn't specify a height/width, use the dimensions
-    // specified in the style.
-    if (Float.isNaN(availableWidth) && node.style.dimensions[DIMENSION_WIDTH] >= 0.0) {
+    CSSMeasureMode widthMeasureMode = CSSMeasureMode.UNDEFINED;
+    CSSMeasureMode heightMeasureMode = CSSMeasureMode.UNDEFINED;
+
+    if (!Float.isNaN(availableWidth)) {
+      widthMeasureMode = CSSMeasureMode.EXACTLY;
+    } else if (node.style.dimensions[DIMENSION_WIDTH] >= 0.0) {
       float marginAxisRow = (node.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_ROW], leading[CSS_FLEX_DIRECTION_ROW]) + node.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_ROW], trailing[CSS_FLEX_DIRECTION_ROW]));
       availableWidth = node.style.dimensions[DIMENSION_WIDTH] + marginAxisRow;
-    }
-    if (Float.isNaN(availableHeight) && node.style.dimensions[DIMENSION_HEIGHT] >= 0.0) {
-      float marginAxisColumn = (node.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_COLUMN], leading[CSS_FLEX_DIRECTION_COLUMN]) + node.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_COLUMN], trailing[CSS_FLEX_DIRECTION_COLUMN]));
-      availableHeight = node.style.dimensions[DIMENSION_HEIGHT] + marginAxisColumn;
+      widthMeasureMode = CSSMeasureMode.EXACTLY;
+    } else if (node.style.maxWidth >= 0.0) {
+      availableWidth = node.style.maxWidth;
+      widthMeasureMode = CSSMeasureMode.AT_MOST;
     }
 
-    CSSMeasureMode widthMeasureMode = Float.isNaN(availableWidth) ? CSSMeasureMode.UNDEFINED : CSSMeasureMode.EXACTLY;
-    CSSMeasureMode heightMeasureMode = Float.isNaN(availableHeight) ? CSSMeasureMode.UNDEFINED : CSSMeasureMode.EXACTLY;
+    if (!Float.isNaN(availableHeight)) {
+      heightMeasureMode = CSSMeasureMode.EXACTLY;
+    } else if (node.style.dimensions[DIMENSION_HEIGHT] >= 0.0) {
+      float marginAxisColumn = (node.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_COLUMN], leading[CSS_FLEX_DIRECTION_COLUMN]) + node.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_COLUMN], trailing[CSS_FLEX_DIRECTION_COLUMN]));
+      availableHeight = node.style.dimensions[DIMENSION_HEIGHT] + marginAxisColumn;
+      heightMeasureMode = CSSMeasureMode.EXACTLY;
+    } else if (node.style.maxHeight >= 0.0) {
+      availableHeight = node.style.maxHeight;
+      heightMeasureMode = CSSMeasureMode.AT_MOST;
+    }
 
     if (layoutNodeInternal(layoutContext, node, availableWidth, availableHeight, parentDirection, widthMeasureMode, heightMeasureMode, true, "initial")) {
       setPosition(node, node.layout.direction);
@@ -712,56 +723,61 @@ public class LayoutEngine {
           child.layout.flexBasis = Math.max(0, ((child.style.padding.getWithFallback(leadingSpacing[mainAxis], leading[mainAxis]) + child.style.border.getWithFallback(leadingSpacing[mainAxis], leading[mainAxis])) + (child.style.padding.getWithFallback(trailingSpacing[mainAxis], trailing[mainAxis]) + child.style.border.getWithFallback(trailingSpacing[mainAxis], trailing[mainAxis]))));
         } else {
   
-          // Compute the flex basis and hypothetical main size (i.e. the clamped flex basis).
           childWidth = CSSConstants.UNDEFINED;
           childHeight = CSSConstants.UNDEFINED;
           childWidthMeasureMode = CSSMeasureMode.UNDEFINED;
           childHeightMeasureMode = CSSMeasureMode.UNDEFINED;
   
-          if ((child.style.dimensions[dim[CSS_FLEX_DIRECTION_ROW]] >= 0.0)) {
-            childWidth = child.style.dimensions[DIMENSION_WIDTH] + (child.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_ROW], leading[CSS_FLEX_DIRECTION_ROW]) + child.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_ROW], trailing[CSS_FLEX_DIRECTION_ROW]));
-            childWidthMeasureMode = CSSMeasureMode.EXACTLY;
-          }
-          if ((child.style.dimensions[dim[CSS_FLEX_DIRECTION_COLUMN]] >= 0.0)) {
-            childHeight = child.style.dimensions[DIMENSION_HEIGHT] + (child.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_COLUMN], leading[CSS_FLEX_DIRECTION_COLUMN]) + child.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_COLUMN], trailing[CSS_FLEX_DIRECTION_COLUMN]));
-            childHeightMeasureMode = CSSMeasureMode.EXACTLY;
-          }
-  
-          // According to the spec, if the main size is not definite and the
-          // child's inline axis is parallel to the main axis (i.e. it's
-          // horizontal), the child should be sized using "UNDEFINED" in
-          // the main size. Otherwise use "AT_MOST" in the cross axis.
-          if (!isMainAxisRow && Float.isNaN(childWidth) && !Float.isNaN(availableInnerWidth)) {
-            childWidth = availableInnerWidth;
-            childWidthMeasureMode = CSSMeasureMode.AT_MOST;
-          }
-  
-          // The W3C spec doesn't say anything about the 'overflow' property,
-          // but all major browsers appear to implement the following logic.
-          if (node.style.overflow == CSSOverflow.HIDDEN) {
-            if (isMainAxisRow && Float.isNaN(childHeight) && !Float.isNaN(availableInnerHeight)) {
-              childHeight = availableInnerHeight;
+          // Main axis
+          if (isMainAxisRow) {
+            if (widthMeasureMode == CSSMeasureMode.UNDEFINED || Float.isNaN(availableInnerMainDim)) {
+              childWidth = CSSConstants.UNDEFINED;
+              childWidthMeasureMode = CSSMeasureMode.UNDEFINED;
+            } else {
+              childWidth = availableInnerMainDim;
+              childWidthMeasureMode = CSSMeasureMode.AT_MOST;
+            }
+          } else if (node.style.overflow == CSSOverflow.HIDDEN) {
+            if (heightMeasureMode == CSSMeasureMode.UNDEFINED || Float.isNaN(availableInnerMainDim)) {
+              childHeight = CSSConstants.UNDEFINED;
+              childHeightMeasureMode = CSSMeasureMode.UNDEFINED;
+            } else {
+              childHeight = availableInnerMainDim;
               childHeightMeasureMode = CSSMeasureMode.AT_MOST;
             }
           }
   
-          // If child has no defined size in the cross axis and is set to stretch, set the cross
-          // axis to be measured exactly with the available inner width
-          if (!isMainAxisRow &&
-              !Float.isNaN(availableInnerWidth) &&
-              !(child.style.dimensions[dim[CSS_FLEX_DIRECTION_ROW]] >= 0.0) &&
-              widthMeasureMode == CSSMeasureMode.EXACTLY &&
-              getAlignItem(node, child) == CSSAlign.STRETCH) {
-            childWidth = availableInnerWidth;
-            childWidthMeasureMode = CSSMeasureMode.EXACTLY;
-          }
-          if (isMainAxisRow &&
-              !Float.isNaN(availableInnerHeight) &&
-              !(child.style.dimensions[dim[CSS_FLEX_DIRECTION_COLUMN]] >= 0.0) &&
-              heightMeasureMode == CSSMeasureMode.EXACTLY &&
-              getAlignItem(node, child) == CSSAlign.STRETCH) {
-            childHeight = availableInnerHeight;
-            childHeightMeasureMode = CSSMeasureMode.EXACTLY;
+          // Cross axis
+          if (isMainAxisRow) {
+            if (node.style.overflow == CSSOverflow.HIDDEN) {
+              if (!Float.isNaN(availableInnerCrossDim) &&
+                  !(child.style.dimensions[dim[CSS_FLEX_DIRECTION_COLUMN]] >= 0.0) &&
+                  heightMeasureMode == CSSMeasureMode.EXACTLY &&
+                  getAlignItem(node, child) == CSSAlign.STRETCH) {
+                childHeight = availableInnerCrossDim;
+                childHeightMeasureMode = CSSMeasureMode.EXACTLY;
+              } else if (!(child.style.dimensions[dim[CSS_FLEX_DIRECTION_COLUMN]] >= 0.0)) {
+                childHeight = availableInnerCrossDim;
+                childHeightMeasureMode = Float.isNaN(childHeight) ? CSSMeasureMode.UNDEFINED : CSSMeasureMode.AT_MOST;
+              } else {
+                childHeight = child.style.dimensions[DIMENSION_HEIGHT] + (child.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_COLUMN], leading[CSS_FLEX_DIRECTION_COLUMN]) + child.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_COLUMN], trailing[CSS_FLEX_DIRECTION_COLUMN]));
+                childHeightMeasureMode = CSSMeasureMode.EXACTLY;
+              }
+            }
+          } else {
+            if (!Float.isNaN(availableInnerCrossDim) &&
+                !(child.style.dimensions[dim[CSS_FLEX_DIRECTION_ROW]] >= 0.0) &&
+                widthMeasureMode == CSSMeasureMode.EXACTLY &&
+                getAlignItem(node, child) == CSSAlign.STRETCH) {
+              childWidth = availableInnerCrossDim;
+              childWidthMeasureMode = CSSMeasureMode.EXACTLY;
+            } else if (!(child.style.dimensions[dim[CSS_FLEX_DIRECTION_ROW]] >= 0.0)) {
+              childWidth = availableInnerCrossDim;
+              childWidthMeasureMode = Float.isNaN(childWidth) ? CSSMeasureMode.UNDEFINED : CSSMeasureMode.AT_MOST;
+            } else {
+              childWidth = child.style.dimensions[DIMENSION_WIDTH] + (child.style.margin.getWithFallback(leadingSpacing[CSS_FLEX_DIRECTION_ROW], leading[CSS_FLEX_DIRECTION_ROW]) + child.style.margin.getWithFallback(trailingSpacing[CSS_FLEX_DIRECTION_ROW], trailing[CSS_FLEX_DIRECTION_ROW]));
+              childWidthMeasureMode = CSSMeasureMode.EXACTLY;
+            }
           }
   
           // Measure the child
