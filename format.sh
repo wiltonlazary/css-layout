@@ -2,6 +2,7 @@
 
 clang-format \
   -style="{ \
+    AlignAfterOpenBracket: Align, \
     AlignEscapedNewlinesLeft: true, \
     AlignOperands: true, \
     AllowAllParametersOfDeclarationOnNextLine: false, \
@@ -20,14 +21,14 @@ clang-format \
     KeepEmptyLinesAtTheStartOfBlocks: false, \
     Language: Cpp, \
     PenaltyBreakBeforeFirstCallParameter: 100, \
-    PenaltyBreakString: 100, \
+    PenaltyBreakString: 1000, \
     PenaltyExcessCharacter: 100, \
+    PenaltyReturnTypeOnItsOwnLine: 100, \
     PointerAlignment: Right, \
     SortIncludes: true, \
     SpaceAfterCStyleCast: true, \
     UseTab: Never, \
   }" "$@" \
-  -i $(dirname $0)/CSSLayout/*.{h,c,cpp} \
-     $(dirname $0)/tests/CSSLayoutTestUtils/*.{h,c,cpp} \
+  -i $(dirname $0)/yoga/*.{h,c,cpp} \
      $(dirname $0)/benchmarks/*.{h,c,cpp} \
      $(dirname $0)/java/jni/*.{h,c,cpp}
