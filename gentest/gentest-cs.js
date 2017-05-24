@@ -17,6 +17,9 @@ function toCsUnitValue(value) {
   if (value.indexOf('%') >= 0){
     methodName = '.Percent()';
   }
+  if(value.indexOf('Auto') >= 0){
+    return 'YogaValue.Auto()';
+  }
   return toValueCs(value) + methodName;
 }
 
@@ -50,25 +53,18 @@ CSEmitter.prototype = Object.create(Emitter.prototype, {
     this.push('{');
     this.pushIndent();
 
-    if (experiments.length > 0) {
-      for (var i in experiments) {
-        this.push('YogaNode.SetExperimentalFeatureEnabled(YogaExperimentalFeature.' + experiments[i] +', true);');
-      }
-      this.push('');
+    this.push('YogaConfig config = new YogaConfig();')
+    for (var i in experiments) {
+      this.push('config.SetExperimentalFeatureEnabled(YogaExperimentalFeature.' + experiments[i] +', true);');
     }
+    this.push('');
   }},
 
   emitTestTreePrologue:{value:function(nodeName) {
-    this.push('YogaNode ' + nodeName + ' = new YogaNode();');
+    this.push('YogaNode ' + nodeName + ' = new YogaNode(config);');
   }},
 
   emitTestEpilogue:{value:function(experiments) {
-    if (experiments.length > 0) {
-      this.push('');
-      for (var i in experiments) {
-        this.push('YogaNode.SetExperimentalFeatureEnabled(YogaExperimentalFeature.' + experiments[i] +', false);');
-      }
-    }
 
     this.popIndent();
     this.push([
@@ -96,6 +92,8 @@ CSEmitter.prototype = Object.create(Emitter.prototype, {
   YGAlignFlexEnd:{value:'YogaAlign.FlexEnd'},
   YGAlignFlexStart:{value:'YogaAlign.FlexStart'},
   YGAlignStretch:{value:'YogaAlign.Stretch'},
+  YGAlignSpaceBetween:{value:'YogaAlign.SpaceBetween'},
+  YGAlignSpaceAround:{value:'YogaAlign.SpaceAround'},
   YGAlignBaseline:{value:'YogaAlign.Baseline'},
 
   YGDirectionInherit:{value:'YogaDirection.Inherit'},
@@ -128,10 +126,16 @@ CSEmitter.prototype = Object.create(Emitter.prototype, {
 
   YGUndefined:{value:'YogaConstants.Undefined'},
 
+  YGAuto:{value:'YogaConstants.Auto'},
+
+  YGDisplayFlex:{value:'YogaDisplay.Flex'},
+  YGDisplayNone:{value:'YogaDisplay.None'},
+
   YGWrapNoWrap:{value:'YogaWrap.NoWrap'},
   YGWrapWrap:{value:'YogaWrap.Wrap'},
+  YGWrapWrapReverse:{value: 'YogaWrap.WrapReverse'},
 
-  YGNodeCalculateLayout:{value:function(node, dir) {
+  YGNodeCalculateLayout:{value:function(node, dir, experiments) {
     this.push(node + '.StyleDirection = ' + dir + ';');
     this.push(node + '.CalculateLayout();');
   }},
@@ -174,6 +178,10 @@ CSEmitter.prototype = Object.create(Emitter.prototype, {
 
   YGNodeStyleSetDirection:{value:function(nodeName, value) {
     this.push(nodeName + '.StyleDirection = ' + toValueCs(value) + ';');
+  }},
+
+  YGNodeStyleSetDisplay:{value:function(nodeName, value) {
+    this.push(nodeName + '.Display = ' + toValueCs(value) + ';');
   }},
 
   YGNodeStyleSetFlexBasis:{value:function(nodeName, value) {

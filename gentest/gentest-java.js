@@ -15,6 +15,8 @@ function toValueJava(value) {
 function toMethodName(value) {
   if (value.indexOf('%') >= 0){
     return 'Percent';
+  } else if(value.indexOf('AUTO') >= 0) {
+    return 'Auto';
   }
   return '';
 }
@@ -56,26 +58,18 @@ JavaEmitter.prototype = Object.create(Emitter.prototype, {
     this.push('public void test_' + name + '() {');
     this.pushIndent();
 
-    if (experiments.length > 0) {
-      for (var i in experiments) {
-        this.push('YogaNode.setExperimentalFeatureEnabled(YogaExperimentalFeature.' + toJavaUpper(experiments[i]) +', true);');
-      }
-      this.push('');
+    this.push("YogaConfig config = new YogaConfig();")
+    for (var i in experiments) {
+      this.push('config.setExperimentalFeatureEnabled(YogaExperimentalFeature.' + toJavaUpper(experiments[i]) +', true);');
     }
+    this.push('');
   }},
 
   emitTestTreePrologue:{value:function(nodeName) {
-    this.push('final YogaNode ' + nodeName + ' = new YogaNode();');
+    this.push('final YogaNode ' + nodeName + ' = new YogaNode(config);');
   }},
 
   emitTestEpilogue:{value:function(experiments) {
-    if (experiments.length > 0) {
-      this.push('');
-      for (var i in experiments) {
-        this.push('YogaNode.setExperimentalFeatureEnabled(YogaExperimentalFeature.' + toJavaUpper(experiments[i]) +', false);');
-      }
-    }
-
     this.popIndent();
     this.push([
       '}',
@@ -100,6 +94,8 @@ JavaEmitter.prototype = Object.create(Emitter.prototype, {
   YGAlignFlexEnd:{value:'YogaAlign.FLEX_END'},
   YGAlignFlexStart:{value:'YogaAlign.FLEX_START'},
   YGAlignStretch:{value:'YogaAlign.STRETCH'},
+  YGAlignSpaceBetween:{value:'YogaAlign.SPACE_BETWEEN'},
+  YGAlignSpaceAround:{value:'YogaAlign.SPACE_AROUND'},
   YGAlignBaseline:{value:'YogaAlign.BASELINE'},
 
   YGDirectionInherit:{value:'YogaDirection.INHERIT'},
@@ -132,12 +128,18 @@ JavaEmitter.prototype = Object.create(Emitter.prototype, {
 
   YGUndefined:{value:'YogaConstants.UNDEFINED'},
 
+  YGDisplayFlex:{value:'YogaDisplay.FLEX'},
+  YGDisplayNone:{value:'YogaDisplay.NONE'},
+  YGAuto:{value:'YogaConstants.AUTO'},
+
+
   YGWrapNoWrap:{value:'YogaWrap.NO_WRAP'},
   YGWrapWrap:{value:'YogaWrap.WRAP'},
+  YGWrapWrapReverse:{value: 'YogaWrap.WRAP_REVERSE'},
 
-  YGNodeCalculateLayout:{value:function(node, dir) {
+  YGNodeCalculateLayout:{value:function(node, dir, experiments) {
     this.push(node + '.setDirection(' + dir + ');');
-    this.push(node + '.calculateLayout();');
+    this.push(node + '.calculateLayout(YogaConstants.UNDEFINED, YogaConstants.UNDEFINED);');
   }},
 
   YGNodeInsertChild:{value:function(parentName, nodeName, index) {
@@ -180,6 +182,10 @@ JavaEmitter.prototype = Object.create(Emitter.prototype, {
     this.push(nodeName + '.setDirection(' + toValueJava(value) + ');');
   }},
 
+  YGNodeStyleSetDisplay:{value:function(nodeName, value) {
+    this.push(nodeName + '.setDisplay(' + toValueJava(value) + ');');
+  }},
+
   YGNodeStyleSetFlexBasis:{value:function(nodeName, value) {
     this.push(nodeName + '.setFlexBasis' + toMethodName(value) + '(' + toValueJava(value) + 'f);');
   }},
@@ -209,7 +215,14 @@ JavaEmitter.prototype = Object.create(Emitter.prototype, {
   }},
 
   YGNodeStyleSetMargin:{value:function(nodeName, edge, value) {
-    this.push(nodeName + '.setMargin' + toMethodName(value) + '(' + edge + ', ' + toValueJava(value) + 'f);');
+    var valueStr = toValueJava(value);
+    if (valueStr != 'YogaConstants.AUTO') {
+      valueStr = ', ' + valueStr + 'f';
+    } else {
+      valueStr = '';
+    }
+
+    this.push(nodeName + '.setMargin' + toMethodName(value) + '(' + edge + valueStr + ');');
   }},
 
   YGNodeStyleSetMaxHeight:{value:function(nodeName, value) {

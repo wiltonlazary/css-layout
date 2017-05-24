@@ -13,16 +13,13 @@
 #include "./Layout.hh"
 #include "./Size.hh"
 #include "./Value.hh"
+#include "./Config.hh"
 #include "./global.hh"
-
-#define NBIND_DUPLICATE_POINTERS true
 
 #include <nbind/nbind.h>
 
 NBIND_GLOBAL()
 {
-    function(setExperimentalFeatureEnabled);
-    function(isExperimentalFeatureEnabled);
     function(getInstanceCount);
 }
 
@@ -43,9 +40,21 @@ NBIND_CLASS(Value)
     construct<int, double>();
 }
 
-NBIND_CLASS(Node)
+NBIND_CLASS(Config)
 {
     method(create);
+
+    method(destroy);
+
+    method(setExperimentalFeatureEnabled);
+
+    method(isExperimentalFeatureEnabled);
+}
+
+NBIND_CLASS(Node)
+{
+    method(createDefault);
+    method(createWithConfig);
     method(destroy);
 
     method(reset);
@@ -65,8 +74,10 @@ NBIND_CLASS(Node)
 
     method(setMargin);
     method(setMarginPercent);
+    method(setMarginAuto);
 
     method(setOverflow);
+    method(setDisplay);
 
     method(setFlex);
     method(setFlexBasis);
@@ -76,8 +87,10 @@ NBIND_CLASS(Node)
 
     method(setWidth);
     method(setWidthPercent);
+    method(setWidthAuto);
     method(setHeight);
     method(setHeightPercent);
+    method(setHeightAuto);
 
     method(setMinWidth);
     method(setMinWidthPercent);
@@ -124,6 +137,9 @@ NBIND_CLASS(Node)
     method(getAspectRatio);
 
     method(getBorder);
+
+    method(getOverflow);
+    method(getDisplay);
 
     method(getPadding);
 

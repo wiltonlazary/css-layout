@@ -23,7 +23,7 @@ module.exports = function (bind, lib) {
 
         UNDEFINED: NaN
 
-    }, require(`./YGEnums`));
+    }, require('./YGEnums'));
 
     class Layout {
 
@@ -102,11 +102,14 @@ module.exports = function (bind, lib) {
 
             switch (this.unit) {
 
-                case constants.UNIT_PIXEL:
+                case constants.UNIT_POINT:
                     return `${this.value}`;
 
                 case constants.UNIT_PERCENT:
                     return `${this.value}%`;
+
+                case constants.UNIT_AUTO:
+                    return `auto`;
 
                 default: {
                     return `${this.value}?`;
@@ -126,36 +129,61 @@ module.exports = function (bind, lib) {
 
     for (let fnName of [ `setPosition`, `setMargin`, `setFlexBasis`, `setWidth`, `setHeight`, `setMinWidth`, `setMinHeight`, `setMaxWidth`, `setMaxHeight`, `setPadding` ]) {
 
-        let methods = { [constants.UNIT_PIXEL]: lib.Node.prototype[fnName], [constants.UNIT_PERCENT]: lib.Node.prototype[`${fnName}Percent`] };
-
-        if (Object.keys(methods).some(method => methods[method] == null))
-            throw new Error(`Assertion failed; some unit derivates of ${fnName} seem missing`);
+        let methods = { [constants.UNIT_POINT]: lib.Node.prototype[fnName], [constants.UNIT_PERCENT]: lib.Node.prototype[`${fnName}Percent`], [constants.UNIT_AUTO]: lib.Node.prototype[`${fnName}Auto`] };
 
         patch(lib.Node.prototype, fnName, function (original, ... args) {
 
             // We patch all these functions to add support for the following calls:
-            // .setWidth(100) / .setWidth("100%") / .setWidth(.getWidth())
+            // .setWidth(100) / .setWidth("100%") / .setWidth(.getWidth()) / .setWidth("auto")
 
             let value = args.pop();
             let unit, asNumber;
 
-            if (value instanceof Value) {
+            if (value === `auto`) {
+
+                unit = constants.UNIT_AUTO;
+                asNumber = undefined;
+
+            } else if (value instanceof Value) {
 
                 unit = value.unit;
                 asNumber = value.valueOf();
 
             } else {
 
-                unit = typeof value === `string` && value.endsWith(`%`) ? constants.UNIT_PERCENT : constants.UNIT_PIXEL;
+                unit = typeof value === `string` && value.endsWith(`%`) ? constants.UNIT_PERCENT : constants.UNIT_POINT;
                 asNumber = parseFloat(value);
 
             }
 
-            return methods[unit].call(this, ... args, asNumber);
+            if (!Object.prototype.hasOwnProperty.call(methods, unit))
+                throw new Error(`Failed to execute "${fnName}": Unsupported unit.`);
+
+            if (asNumber !== undefined) {
+                return methods[unit].call(this, ... args, asNumber);
+            } else {
+                return methods[unit].call(this, ... args);
+            }
 
         });
 
     }
+
+    patch(lib.Config.prototype, `free`, function () {
+
+        // Since we handle the memory allocation ourselves (via lib.Config.create), we also need to handle the deallocation
+
+	lib.Config.destroy(this);
+
+    });
+
+    patch(lib.Node, `create`, function (_, config) {
+
+        // We decide the constructor we want to call depending on the parameters
+
+        return config ? lib.Node.createWithConfig(config) : lib.Node.createDefault();
+
+    });
 
     patch(lib.Node.prototype, `free`, function () {
 
@@ -195,18 +223,6 @@ module.exports = function (bind, lib) {
 
     });
 
-    function setExperimentalFeatureEnabled(... args) {
-
-        return lib.setExperimentalFeatureEnabled(... args);
-
-    }
-
-    function isExperimentalFeatureEnabled(... args) {
-
-        return lib.isExperimentalFeatureEnabled(... args);
-
-    }
-
     function getInstanceCount(... args) {
 
         return lib.getInstanceCount(... args);
@@ -219,14 +235,12 @@ module.exports = function (bind, lib) {
 
     return Object.assign({
 
+	Config: lib.Config,
         Node: lib.Node,
 
         Layout,
         Size,
         Value,
-
-        setExperimentalFeatureEnabled,
-        isExperimentalFeatureEnabled,
 
         getInstanceCount
 

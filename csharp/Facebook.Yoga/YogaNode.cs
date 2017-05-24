@@ -10,34 +10,44 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
+
+#if __IOS__
+using ObjCRuntime;
+#endif
+#if ENABLE_IL2CPP
+using AOT;
+#endif
 
 namespace Facebook.Yoga
 {
     public partial class YogaNode : IEnumerable<YogaNode>
     {
-        private Native.YGNodeHandle _ygNode;
+        private readonly YGNodeHandle _ygNode;
+        private readonly YogaConfig _config;
         private WeakReference _parent;
         private List<YogaNode> _children;
         private MeasureFunction _measureFunction;
-        private YogaMeasureFunc _ygMeasureFunc;
         private BaselineFunction _baselineFunction;
-        private YogaBaselineFunc _ygBaselineFunc;
+        private YogaMeasureFunc _managedMeasure;
+        private YogaBaselineFunc _managedBaseline;
         private object _data;
 
-        public YogaNode()
+        public YogaNode(YogaConfig config = null)
         {
-            YogaLogger.Initialize();
-
-            _ygNode = Native.YGNodeNew();
+            _config = config == null ? YogaConfig.Default : config;
+            _ygNode = Native.YGNodeNewWithConfig(_config.Handle);
             if (_ygNode.IsInvalid)
             {
                 throw new InvalidOperationException("Failed to allocate native memory");
             }
+
+            _ygNode.SetContext(this);
         }
 
         public YogaNode(YogaNode srcNode)
-            : this()
+            : this(srcNode._config)
         {
             CopyStyle(srcNode);
         }
@@ -48,7 +58,9 @@ namespace Facebook.Yoga
             _baselineFunction = null;
             _data = null;
 
+            _ygNode.ReleaseManaged();
             Native.YGNodeReset(_ygNode);
+            _ygNode.SetContext(this);
         }
 
         public bool IsDirty
@@ -142,6 +154,19 @@ namespace Facebook.Yoga
             set
             {
                 Native.YGNodeStyleSetJustifyContent(_ygNode, value);
+            }
+        }
+
+        public YogaDisplay Display
+        {
+            get
+            {
+                return Native.YGNodeStyleGetDisplay(_ygNode);
+            }
+
+            set
+            {
+                Native.YGNodeStyleSetDisplay(_ygNode, value);
             }
         }
 
@@ -248,7 +273,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetFlexBasis(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetFlexBasis(_ygNode));
             }
 
             set
@@ -256,6 +281,10 @@ namespace Facebook.Yoga
                 if (value.Unit == YogaUnit.Percent)
                 {
                     Native.YGNodeStyleSetFlexBasisPercent(_ygNode, value.Value);
+                }
+                else if (value.Unit == YogaUnit.Auto)
+                {
+                    Native.YGNodeStyleSetFlexBasisAuto(_ygNode);
                 }
                 else
                 {
@@ -268,7 +297,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetWidth(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetWidth(_ygNode));
             }
 
             set
@@ -276,6 +305,10 @@ namespace Facebook.Yoga
                 if (value.Unit == YogaUnit.Percent)
                 {
                     Native.YGNodeStyleSetWidthPercent(_ygNode, value.Value);
+                }
+                else if (value.Unit == YogaUnit.Auto)
+                {
+                    Native.YGNodeStyleSetWidthAuto(_ygNode);
                 }
                 else
                 {
@@ -288,7 +321,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetHeight(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetHeight(_ygNode));
             }
 
             set
@@ -296,6 +329,10 @@ namespace Facebook.Yoga
                 if (value.Unit == YogaUnit.Percent)
                 {
                     Native.YGNodeStyleSetHeightPercent(_ygNode, value.Value);
+                }
+                else if (value.Unit == YogaUnit.Auto)
+                {
+                    Native.YGNodeStyleSetHeightAuto(_ygNode);
                 }
                 else
                 {
@@ -308,7 +345,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetMaxWidth(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetMaxWidth(_ygNode));
             }
 
             set
@@ -328,7 +365,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetMaxHeight(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetMaxHeight(_ygNode));
             }
 
             set
@@ -348,7 +385,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetMinWidth(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetMinWidth(_ygNode));
             }
 
             set
@@ -368,7 +405,7 @@ namespace Facebook.Yoga
         {
             get
             {
-                return Native.YGNodeStyleGetMinHeight(_ygNode);
+                return YogaValue.MarshalValue(Native.YGNodeStyleGetMinHeight(_ygNode));
             }
 
             set
@@ -384,7 +421,7 @@ namespace Facebook.Yoga
             }
         }
 
-        public float StyleAspectRatio
+        public float AspectRatio
         {
             get
             {
@@ -513,6 +550,20 @@ namespace Facebook.Yoga
             Native.YGNodeRemoveChild(_ygNode, child._ygNode);
         }
 
+        public void AddChild(YogaNode child)
+        {
+            Insert(Count, child);
+        }
+
+        public void RemoveChild(YogaNode child)
+        {
+            int index = IndexOf(child);
+            if (index >= 0)
+            {
+                RemoveAt(index);
+            }
+        }
+
         public void Clear()
         {
             if (_children != null)
@@ -532,15 +583,16 @@ namespace Facebook.Yoga
         public void SetMeasureFunction(MeasureFunction measureFunction)
         {
             _measureFunction = measureFunction;
-            _ygMeasureFunc = measureFunction != null ? MeasureInternal : (YogaMeasureFunc)null;
-            Native.YGNodeSetMeasureFunc(_ygNode, _ygMeasureFunc);
+            _managedMeasure = measureFunction != null ? MeasureInternal : (YogaMeasureFunc)null;
+            Native.YGNodeSetMeasureFunc(_ygNode, _managedMeasure);
         }
 
         public void SetBaselineFunction(BaselineFunction baselineFunction)
         {
             _baselineFunction = baselineFunction;
-            _ygBaselineFunc = baselineFunction != null ? BaselineInternal : (YogaBaselineFunc)null;
-            Native.YGNodeSetBaselineFunc(_ygNode, _ygBaselineFunc);
+            _managedBaseline =
+                baselineFunction != null ? BaselineInternal : (YogaBaselineFunc)null;
+            Native.YGNodeSetBaselineFunc(_ygNode, _managedBaseline);
         }
 
         public void CalculateLayout()
@@ -552,39 +604,48 @@ namespace Facebook.Yoga
                 Native.YGNodeStyleGetDirection(_ygNode));
         }
 
-        private YogaSize MeasureInternal(
-            IntPtr node,
+#if (UNITY_IOS && !UNITY_EDITOR) || ENABLE_IL2CPP || __IOS__
+        [MonoPInvokeCallback(typeof(YogaMeasureFunc))]
+#endif
+        private static YogaSize MeasureInternal(
+            IntPtr unmanagedNodePtr,
             float width,
             YogaMeasureMode widthMode,
             float height,
             YogaMeasureMode heightMode)
         {
-            if (_measureFunction == null)
+            var node = YGNodeHandle.GetManaged(unmanagedNodePtr);
+            if (node == null || node._measureFunction == null)
             {
                 throw new InvalidOperationException("Measure function is not defined.");
             }
-
-            return _measureFunction(this, width, widthMode, height, heightMode);
+            return node._measureFunction(node, width, widthMode, height, heightMode);
         }
 
-        private float BaselineInternal(IntPtr node, float width, float height)
+#if (UNITY_IOS && !UNITY_EDITOR) || ENABLE_IL2CPP || __IOS__
+        [MonoPInvokeCallback(typeof(YogaBaselineFunc))]
+#endif
+        private static float BaselineInternal(
+            IntPtr unmanagedNodePtr,
+            float width,
+            float height)
         {
-            if (_baselineFunction == null)
+            var node = YGNodeHandle.GetManaged(unmanagedNodePtr);
+            if (node == null || node._baselineFunction == null)
             {
                 throw new InvalidOperationException("Baseline function is not defined.");
             }
-
-            return _baselineFunction(this, width, height);
+            return node._baselineFunction(node, width, height);
         }
 
         public string Print(YogaPrintOptions options =
             YogaPrintOptions.Layout|YogaPrintOptions.Style|YogaPrintOptions.Children)
         {
             StringBuilder sb = new StringBuilder();
-            YogaLogger.Func orig = YogaLogger.Logger;
-            YogaLogger.Logger = (level, message) => {sb.Append(message);};
+            Logger orig = _config.Logger;
+            _config.Logger = (config, node, level, message) => {sb.Append(message);};
             Native.YGNodePrint(_ygNode, options);
-            YogaLogger.Logger = orig;
+            _config.Logger = orig;
             return sb.ToString();
         }
 
@@ -603,18 +664,6 @@ namespace Facebook.Yoga
         public static int GetInstanceCount()
         {
             return Native.YGNodeGetInstanceCount();
-        }
-
-        public static void SetExperimentalFeatureEnabled(
-            YogaExperimentalFeature feature,
-            bool enabled)
-        {
-            Native.YGSetExperimentalFeatureEnabled(feature, enabled);
-        }
-
-        public static bool IsExperimentalFeatureEnabled(YogaExperimentalFeature feature)
-        {
-            return Native.YGIsExperimentalFeatureEnabled(feature);
         }
     }
 }

@@ -60,3 +60,8 @@ Pods/
 # Carthage/Checkouts
 
 Carthage/Build
+
+# Gradle
+.gradle
+# NDK/CMake
+.externalNativeBuild

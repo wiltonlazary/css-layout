@@ -19,8 +19,9 @@ ENUMS = {
     ],
     'Unit': [
         'Undefined',
-        'Pixel',
+        'Point',
         'Percent',
+        'Auto',
     ],
     'FlexDirection': [
         'Column',
@@ -47,14 +48,21 @@ ENUMS = {
         'FlexEnd',
         'Stretch',
         'Baseline',
+        'SpaceBetween',
+        'SpaceAround',
     ],
     'PositionType': [
         'Relative',
         'Absolute',
     ],
+    'Display': [
+        'Flex',
+        'None',
+    ],
     'Wrap': [
         'NoWrap',
         'Wrap',
+        'WrapReverse',
     ],
     'MeasureMode': [
         'Undefined',
@@ -76,15 +84,19 @@ ENUMS = {
         'Vertical',
         'All',
     ],
+    'NodeType': [
+        'Default',
+        'Text',
+    ],
     'LogLevel': [
         'Error',
         'Warn',
         'Info',
         'Debug',
         'Verbose',
+        'Fatal',
     ],
     'ExperimentalFeature': [
-        'Rounding',
         # Mimic web flex-basis behavior.
         'WebFlexBasis',
     ],
@@ -116,6 +128,16 @@ def to_java_upper(symbol):
         out += c.upper()
     return out
 
+def to_log_lower(symbol):
+    symbol = str(symbol)
+    out = ''
+    for i in range(0, len(symbol)):
+        c = symbol[i]
+        if str.istitle(c) and i is not 0 and not str.istitle(symbol[i - 1]):
+            out += '-'
+        out += c.lower()
+    return out
+
 
 root = os.path.dirname(os.path.abspath(__file__))
 
@@ -125,8 +147,8 @@ with open(root + '/yoga/YGEnums.h', 'w') as f:
     f.write('#pragma once\n\n')
     f.write('#include "YGMacros.h"\n\n')
     f.write('YG_EXTERN_C_BEGIN\n\n')
-    for name, values in ENUMS.items():
-        f.write('#define YG%sCount %s\n' % (name, len(values)))        
+    for name, values in sorted(ENUMS.items()):
+        f.write('#define YG%sCount %s\n' % (name, len(values)))
         f.write('typedef YG_ENUM_BEGIN(YG%s) {\n' % name)
         for value in values:
             if isinstance(value, tuple):
@@ -134,11 +156,30 @@ with open(root + '/yoga/YGEnums.h', 'w') as f:
             else:
                 f.write('  YG%s%s,\n' % (name, value))
         f.write('} YG_ENUM_END(YG%s);\n' % name)
+        f.write('WIN_EXPORT const char *YG%sToString(const YG%s value);\n' % (name, name))
         f.write('\n')
     f.write('YG_EXTERN_C_END\n')
 
+# write out C body for printing
+with open(root + '/yoga/YGEnums.c', 'w') as f:
+    f.write(LICENSE)
+    f.write('#include "YGEnums.h"\n\n')
+    for name, values in sorted(ENUMS.items()):
+        f.write('const char *YG%sToString(const YG%s value){\n' % (name, name))
+        f.write('  switch(value){\n')
+        for value in values:
+            if isinstance(value, tuple):
+                f.write('    case YG%s%s:\n' % (name, value[0]))
+                f.write('      return "%s";\n' % to_log_lower(value[0]))
+            else:
+                f.write('    case YG%s%s:\n' % (name, value))
+                f.write('      return "%s";\n' % to_log_lower(value))
+        f.write('  }\n')
+        f.write('  return "unknown";\n')
+        f.write('}\n\n')
+
 # write out java files
-for name, values in ENUMS.items():
+for name, values in sorted(ENUMS.items()):
     with open(root + '/java/com/facebook/yoga/Yoga%s.java' % name, 'w') as f:
         f.write(LICENSE)
         f.write('package com.facebook.yoga;\n\n')
@@ -181,10 +222,12 @@ for name, values in ENUMS.items():
         f.write('}\n')
 
 # write out csharp files
-for name, values in ENUMS.items():
+for name, values in sorted(ENUMS.items()):
     with open(root + '/csharp/Facebook.Yoga/Yoga%s.cs' % name, 'w') as f:
         f.write(LICENSE)
         f.write('namespace Facebook.Yoga\n{\n')
+        if isinstance(next(iter(values or []), None), tuple):
+            f.write('    [System.Flags]\n')
         f.write('    public enum Yoga%s\n    {\n' % name)
         for value in values:
             if isinstance(value, tuple):
@@ -198,7 +241,7 @@ for name, values in ENUMS.items():
 with open(root + '/javascript/sources/YGEnums.js', 'w') as f:
     f.write(LICENSE)
     f.write('module.exports = {\n\n')
-    for name, values in ENUMS.items():
+    for name, values in sorted(ENUMS.items()):
         f.write('  %s_COUNT: %s,\n' % (to_java_upper(name), len(values)))
         base = 0
         for value in values:

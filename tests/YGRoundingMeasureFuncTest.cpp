@@ -7,60 +7,86 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#include <yoga/Yoga.h>
 #include <gtest/gtest.h>
+#include <yoga/Yoga.h>
 
 static YGSize _measureFloor(YGNodeRef node,
-  float width,
-  YGMeasureMode widthMode,
-  float height,
-  YGMeasureMode heightMode) {
-
+                            float width,
+                            YGMeasureMode widthMode,
+                            float height,
+                            YGMeasureMode heightMode) {
   return YGSize{
-    width = 10.2f,
-    height = 10.2f,
+      width = 10.2f, height = 10.2f,
   };
 }
 
 static YGSize _measureCeil(YGNodeRef node,
-  float width,
-  YGMeasureMode widthMode,
-  float height,
-  YGMeasureMode heightMode) {
-
+                           float width,
+                           YGMeasureMode widthMode,
+                           float height,
+                           YGMeasureMode heightMode) {
   return YGSize{
-    width = 10.5,
-    height = 10.5,
+      width = 10.5, height = 10.5,
   };
 }
 
 TEST(YogaTest, rounding_feature_with_custom_measure_func_floor) {
-  YGSetExperimentalFeatureEnabled(YGExperimentalFeatureRounding, true);
+  const YGConfigRef config = YGConfigNew();
+  const YGNodeRef root = YGNodeNewWithConfig(config);
 
-  const YGNodeRef root = YGNodeNew();
-
-  const YGNodeRef root_child0 = YGNodeNew();
+  const YGNodeRef root_child0 = YGNodeNewWithConfig(config);
   YGNodeSetMeasureFunc(root_child0, _measureFloor);
   YGNodeInsertChild(root, root_child0, 0);
 
+  YGConfigSetPointScaleFactor(config, 0.0f);
+
+  YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionRTL);
+
+  ASSERT_FLOAT_EQ(10.2, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_FLOAT_EQ(10.2, YGNodeLayoutGetHeight(root_child0));
+
+  YGConfigSetPointScaleFactor(config, 1.0f);
+
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_FLOAT_EQ(10, YGNodeLayoutGetWidth(root_child0));
-  ASSERT_FLOAT_EQ(10, YGNodeLayoutGetHeight(root_child0));
+  ASSERT_FLOAT_EQ(11, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_FLOAT_EQ(11, YGNodeLayoutGetHeight(root_child0));
+
+  YGConfigSetPointScaleFactor(config, 2.0f);
+
+  YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionRTL);
+
+  ASSERT_FLOAT_EQ(10.5, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_FLOAT_EQ(10.5, YGNodeLayoutGetHeight(root_child0));
+
+  YGConfigSetPointScaleFactor(config, 4.0f);
+
+  YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
+
+  ASSERT_FLOAT_EQ(10.25, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_FLOAT_EQ(10.25, YGNodeLayoutGetHeight(root_child0));
+
+  YGConfigSetPointScaleFactor(config, 1.0f / 3.0f);
+
+  YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionRTL);
+
+  ASSERT_FLOAT_EQ(12.0, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_FLOAT_EQ(12.0, YGNodeLayoutGetHeight(root_child0));
 
   YGNodeFreeRecursive(root);
 
-  YGSetExperimentalFeatureEnabled(YGExperimentalFeatureRounding, false);
+  YGConfigFree(config);
 }
 
 TEST(YogaTest, rounding_feature_with_custom_measure_func_ceil) {
-  YGSetExperimentalFeatureEnabled(YGExperimentalFeatureRounding, true);
+  const YGConfigRef config = YGConfigNew();
+  const YGNodeRef root = YGNodeNewWithConfig(config);
 
-  const YGNodeRef root = YGNodeNew();
-
-  const YGNodeRef root_child0 = YGNodeNew();
+  const YGNodeRef root_child0 = YGNodeNewWithConfig(config);
   YGNodeSetMeasureFunc(root_child0, _measureCeil);
   YGNodeInsertChild(root, root_child0, 0);
+
+  YGConfigSetPointScaleFactor(config, 1.0f);
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
@@ -69,5 +95,5 @@ TEST(YogaTest, rounding_feature_with_custom_measure_func_ceil) {
 
   YGNodeFreeRecursive(root);
 
-  YGSetExperimentalFeatureEnabled(YGExperimentalFeatureRounding, false);
+  YGConfigFree(config);
 }

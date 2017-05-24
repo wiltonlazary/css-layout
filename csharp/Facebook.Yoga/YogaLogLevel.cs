@@ -16,5 +16,6 @@ namespace Facebook.Yoga
         Info,
         Debug,
         Verbose,
+        Fatal,
     }
 }

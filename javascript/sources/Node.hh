@@ -18,12 +18,15 @@
 #include "./Layout.hh"
 #include "./Size.hh"
 #include "./Value.hh"
+#include "./Config.hh"
 
 class Node {
 
  public:
 
-    static Node * create(void);
+    static Node * createDefault(void);
+    static Node * createWithConfig(Config * config);
+
     static void destroy(Node * node);
 
  public:
@@ -32,7 +35,7 @@ class Node {
 
  private:
 
-    Node(void);
+    Node(Config * config);
 
  public:
 
@@ -65,19 +68,24 @@ class Node {
 
     void setMargin(int edge, double margin);
     void setMarginPercent(int edge, double margin);
+    void setMarginAuto(int edge);
 
     void setOverflow(int overflow);
+    void setDisplay(int display);
 
     void setFlex(double flex);
     void setFlexBasis(double flexBasis);
     void setFlexBasisPercent(double flexBasis);
+    void setFlexBasisAuto();
     void setFlexGrow(double flexGrow);
     void setFlexShrink(double flexShrink);
 
     void setWidth(double width);
     void setWidthPercent(double width);
+    void setWidthAuto();
     void setHeight(double height);
     void setHeightPercent(double height);
+    void setHeightAuto();
 
     void setMinWidth(double minWidth);
     void setMinWidthPercent(double minWidth);
@@ -111,6 +119,7 @@ class Node {
     Value getMargin(int edge) const;
 
     int getOverflow(void) const;
+    int getDisplay(void) const;
 
     Value getFlexBasis(void) const;
     double getFlexGrow(void) const;

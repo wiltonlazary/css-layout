@@ -18,13 +18,33 @@
 
 @implementation YogaKitTests
 
+- (void)testConfigureLayoutIsNoOpWithNilBlock
+{
+  UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
+  id block = nil;
+  XCTAssertNoThrow([view configureLayoutWithBlock:block]);
+}
+
+- (void)testConfigureLayoutBlockWorksWithValidBlock
+{
+  UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
+  [view configureLayoutWithBlock:^(YGLayout *layout){
+    XCTAssertNotNil(layout);
+    layout.isEnabled = YES;
+    layout.width = YGPointValue(25);
+  }];
+
+  XCTAssertTrue(view.yoga.isEnabled);
+  XCTAssertEqual(view.yoga.width.value, 25);
+}
+
 - (void)testNodesAreDeallocedWithSingleView
 {
   __weak YGLayout *layoutRef = nil;
 
   @autoreleasepool {
     UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
-    view.yoga.flexBasis = 1;
+    view.yoga.flexBasis = YGPointValue(1);
 
     layoutRef = view.yoga;
     XCTAssertNotNil(layoutRef);
@@ -43,11 +63,11 @@
   @autoreleasepool {
     UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
     topLayout = view.yoga;
-    topLayout.flexBasis = 1;
+    topLayout.flexBasis = YGPointValue(1);
 
     UIView *subview = [[UIView alloc] initWithFrame:CGRectZero];
     subviewLayout = subview.yoga;
-    subviewLayout.flexBasis = 1;
+    subviewLayout.flexBasis = YGPointValue(1);
 
     view = nil;
   }
@@ -93,9 +113,9 @@
 
   UIView *textBadgeView = [[UIView alloc] initWithFrame:CGRectZero];
   textBadgeView.yoga.isEnabled = YES;
-  textBadgeView.yoga.margin = 0;
-  textBadgeView.yoga.width = 10;
-  textBadgeView.yoga.height = 10;
+  textBadgeView.yoga.margin = YGPointValue(0);
+  textBadgeView.yoga.width = YGPointValue(10);
+  textBadgeView.yoga.height = YGPointValue(10);
   [container addSubview:textBadgeView];
 
   const CGSize textBadgeViewSize = textBadgeView.yoga.intrinsicSize;
@@ -109,6 +129,97 @@
   XCTAssertEqual(longTextLabelSize.width + textBadgeView.yoga.intrinsicSize.width, containerSize.width);
 }
 
+- (void)testPreservingOrigin
+{
+  UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0,0,50,75)];
+  container.yoga.isEnabled = YES;
+
+  UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
+  view.yoga.isEnabled = YES;
+  view.yoga.flexBasis = YGPointValue(0);
+  view.yoga.flexGrow = 1;
+  [container addSubview:view];
+
+  UIView *view2 = [[UIView alloc] initWithFrame:CGRectZero];
+  view2.yoga.isEnabled = YES;
+  view2.yoga.marginTop = YGPointValue(25);
+  view2.yoga.flexBasis = YGPointValue(0);
+  view2.yoga.flexGrow = 1;
+  [container addSubview:view2];
+
+  [container.yoga applyLayoutPreservingOrigin:YES];
+  XCTAssertEqual(50, view2.frame.origin.y);
+
+  [view2.yoga applyLayoutPreservingOrigin:NO];
+  XCTAssertEqual(25, view2.frame.origin.y);
+}
+
+- (void)testContainerWithFlexibleWidthGetsCorrectlySized
+{
+  UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
+  container.yoga.isEnabled = YES;
+
+  UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+  view.yoga.isEnabled = YES;
+  view.yoga.width = YGPointValue(100);
+  view.yoga.height = YGPointValue(100);
+  [container addSubview:view];
+
+  [container.yoga applyLayoutPreservingOrigin:YES dimensionFlexibility:YGDimensionFlexibilityFlexibleWidth];
+  XCTAssertEqual(100, container.frame.size.width);
+  XCTAssertEqual(200, container.frame.size.height);
+}
+
+- (void)testContainerWithFlexibleHeightGetsCorrectlySized
+{
+  UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
+  container.yoga.isEnabled = YES;
+
+  UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+  view.yoga.isEnabled = YES;
+  view.yoga.width = YGPointValue(100);
+  view.yoga.height = YGPointValue(100);
+  [container addSubview:view];
+
+  [container.yoga applyLayoutPreservingOrigin:YES dimensionFlexibility:YGDimensionFlexibilityFlexibleHeigth];
+  XCTAssertEqual(200, container.frame.size.width);
+  XCTAssertEqual(100, container.frame.size.height);
+}
+
+- (void)testContainerWithFlexibleWidthAndHeightGetsCorrectlySized
+{
+  UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
+  container.yoga.isEnabled = YES;
+
+  UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+  view.yoga.isEnabled = YES;
+  view.yoga.width = YGPointValue(100);
+  view.yoga.height = YGPointValue(100);
+  [container addSubview:view];
+
+  [container.yoga applyLayoutPreservingOrigin:YES dimensionFlexibility:YGDimensionFlexibilityFlexibleWidth | YGDimensionFlexibilityFlexibleHeigth];
+  XCTAssertEqual(100, container.frame.size.width);
+  XCTAssertEqual(100, container.frame.size.height);
+}
+
+- (void)testMarkingDirtyOnlyWorksOnLeafNodes
+{
+  UIView *container = [[UIView alloc] initWithFrame:CGRectZero];
+  container.yoga.isEnabled = YES;
+
+  UIView *subview = [[UIView alloc] initWithFrame:CGRectZero];
+  subview.yoga.isEnabled = YES;
+  [container addSubview:subview];
+
+  XCTAssertFalse(container.yoga.isDirty);
+  [container.yoga markDirty];
+  XCTAssertFalse(container.yoga.isDirty);
+
+  XCTAssertFalse(subview.yoga.isDirty);
+  [subview.yoga markDirty];
+  XCTAssertTrue(subview.yoga.isDirty);
+}
+
 - (void)testThatMarkingLeafsAsDirtyWillTriggerASizeRecalculation
 {
   UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 500, 50)];
@@ -116,22 +227,22 @@
   container.yoga.flexDirection = YGFlexDirectionRow;
   container.yoga.alignItems = YGAlignFlexStart;
 
-  UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
-  label.text = @"This is a short text.";
-  label.numberOfLines = 1;
-  label.yoga.isEnabled = YES;
-  [container addSubview:label];
+  UILabel *view = [[UILabel alloc] initWithFrame:CGRectZero];
+  view.text = @"This is a short text.";
+  view.numberOfLines = 1;
+  view.yoga.isEnabled = YES;
+  [container addSubview:view];
 
-  [container.yoga applyLayout];
-  CGSize const labelSizeAfterFirstPass = label.frame.size;
+  [container.yoga applyLayoutPreservingOrigin:YES];
+  CGSize const viewSizeAfterFirstPass = view.frame.size;
 
-  label.text = @"This is a slightly longer text.";
-  XCTAssertTrue(CGSizeEqualToSize(label.frame.size, labelSizeAfterFirstPass));
+  view.text = @"This is a slightly longer text.";
+  XCTAssertTrue(CGSizeEqualToSize(view.frame.size, viewSizeAfterFirstPass));
 
-  [label.yoga markDirty];
+  [view.yoga markDirty];
 
-  [container.yoga applyLayout];
-  XCTAssertFalse(CGSizeEqualToSize(label.frame.size, labelSizeAfterFirstPass));
+  [container.yoga applyLayoutPreservingOrigin:YES];
+  XCTAssertFalse(CGSizeEqualToSize(view.frame.size, viewSizeAfterFirstPass));
 }
 
 - (void)testFrameAndOriginPlacement
@@ -157,7 +268,7 @@
   subview3.yoga.flexGrow = 1;
   [container addSubview:subview3];
 
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   XCTAssertEqualWithAccuracy(subview2.frame.origin.x, CGRectGetMaxX(subview1.frame), FLT_EPSILON);
   XCTAssertEqualWithAccuracy(subview3.frame.origin.x, CGRectGetMaxX(subview2.frame), FLT_EPSILON);
@@ -193,7 +304,7 @@
   subview3.yoga.flexGrow = 1;
   [container addSubview:subview3];
 
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   XCTAssertTrue(CGRectEqualToRect(subview1.frame, CGRectMake(0, 0, 100, 50)));
   XCTAssertTrue(CGRectEqualToRect(subview2.frame, CGRectMake(100, 0, 100, 50)));
@@ -201,7 +312,7 @@
 
   [container exchangeSubviewAtIndex:2 withSubviewAtIndex:0];
   subview2.yoga.isIncludedInLayout = NO;
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   XCTAssertTrue(CGRectEqualToRect(subview3.frame, CGRectMake(0, 0, 150, 50)));
   XCTAssertTrue(CGRectEqualToRect(subview1.frame, CGRectMake(150, 0, 150, 50)));
@@ -233,14 +344,14 @@
   subview3.yoga.flexGrow = 1;
   [container addSubview:subview3];
 
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   for (UIView *subview in container.subviews) {
     XCTAssertEqual(subview.bounds.size.width, 100);
   }
 
   subview3.yoga.isIncludedInLayout = NO;
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   XCTAssertEqual(subview1.bounds.size.width, 150);
   XCTAssertEqual(subview2.bounds.size.width, 150);
@@ -270,11 +381,11 @@
   subview3.yoga.isIncludedInLayout = YES;
   [container addSubview:subview3];
 
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
   XCTAssertEqual(container.yoga.numberOfChildren, 1);
 
   subview2.yoga.isIncludedInLayout = YES;
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
   XCTAssertEqual(container.yoga.numberOfChildren, 2);
 }
 
@@ -300,14 +411,14 @@
   subview3.yoga.isIncludedInLayout = NO;
   [container addSubview:subview3];
 
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   XCTAssertEqual(subview1.bounds.size.width, 150);
   XCTAssertEqual(subview2.bounds.size.width, 150);
   XCTAssertEqual(subview3.bounds.size.width, 0);
 
   subview3.yoga.isIncludedInLayout = YES;
-  [container.yoga applyLayout];
+  [container.yoga applyLayoutPreservingOrigin:YES];
 
   XCTAssertEqual(subview1.bounds.size.width, 100);
   XCTAssertEqual(subview2.bounds.size.width, 100);
@@ -326,12 +437,12 @@
   XCTAssertTrue(view.yoga.isLeaf);
 
   view.yoga.isEnabled = YES;
-  view.yoga.width = 50.0;
+  view.yoga.width = YGPointValue(50);
   XCTAssertTrue(view.yoga.isLeaf);
 
   UIView *const subview = view.subviews[0];
   subview.yoga.isEnabled = YES;
-  subview.yoga.width = 50.0;
+  subview.yoga.width = YGPointValue(50);
   XCTAssertFalse(view.yoga.isLeaf);
 }
 
@@ -343,14 +454,14 @@
 
     UIView *subview1 = [[UIView alloc] initWithFrame:CGRectZero];
     subview1.yoga.isEnabled = YES;
-    subview1.yoga.width = 100;
+    subview1.yoga.width = YGPointValue(100);
     subview1.yoga.flexGrow = 1;
     subview1.yoga.flexDirection = YGFlexDirectionColumn;
     [container addSubview:subview1];
 
     UIView *subview2 = [[UIView alloc] initWithFrame:CGRectZero];
     subview2.yoga.isEnabled = YES;
-    subview2.yoga.width = 150;
+    subview2.yoga.width = YGPointValue(150);
     subview2.yoga.flexGrow = 1;
     subview2.yoga.flexDirection = YGFlexDirectionColumn;
     [container addSubview:subview2];
@@ -361,7 +472,7 @@
         someView.yoga.flexGrow = 1;
         [view addSubview:someView];
     }
-    [container.yoga applyLayout];
+    [container.yoga applyLayoutPreservingOrigin:YES];
 
     // Add the same amount of new views, reapply layout.
     for (UIView *view in @[subview1, subview2]) {
@@ -370,7 +481,7 @@
         someView.yoga.flexGrow = 1;
         [view addSubview:someView];
     }
-    [container.yoga applyLayout];
+    [container.yoga applyLayoutPreservingOrigin:YES];
 
     XCTAssertEqual(subview1.bounds.size.width, 100);
     XCTAssertEqual(subview1.bounds.size.height, 25);
@@ -406,184 +517,200 @@
     subview2.yoga.isEnabled = YES;
     [subview1 addSubview:subview2];
 
-    [container.yoga applyLayout];
+    [container.yoga applyLayoutPreservingOrigin:YES];
     [subview2 removeFromSuperview];
-    [container.yoga applyLayout];
+    [container.yoga applyLayoutPreservingOrigin:YES];
+}
+
+- (void)testPointPercent
+{
+  XCTAssertEqual(YGPointValue(1).value, 1);
+  XCTAssertEqual(YGPointValue(1).unit, YGUnitPoint);
+  XCTAssertEqual(YGPercentValue(2).value, 2);
+  XCTAssertEqual(YGPercentValue(2).unit, YGUnitPercent);
 }
 
 - (void)testPositionalPropertiesWork
 {
   UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
 
-  view.yoga.left = 1;
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeLeft).value, 1);
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.left, 1);
+  view.yoga.left = YGPointValue(1);
+  XCTAssertEqual(view.yoga.left.value, 1);
+  XCTAssertEqual(view.yoga.left.unit, YGUnitPoint);
+  view.yoga.left = YGPercentValue(2);
+  XCTAssertEqual(view.yoga.left.value, 2);
+  XCTAssertEqual(view.yoga.left.unit, YGUnitPercent);
 
-  view.yoga.right = 2;
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeRight).value, 2);
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.right, 2);
+  view.yoga.right = YGPointValue(3);
+  XCTAssertEqual(view.yoga.right.value, 3);
+  XCTAssertEqual(view.yoga.right.unit, YGUnitPoint);
+  view.yoga.right = YGPercentValue(4);
+  XCTAssertEqual(view.yoga.right.value, 4);
+  XCTAssertEqual(view.yoga.right.unit, YGUnitPercent);
 
-  view.yoga.top = 3;
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeTop).value, 3);
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.top, 3);
+  view.yoga.top = YGPointValue(5);
+  XCTAssertEqual(view.yoga.top.value, 5);
+  XCTAssertEqual(view.yoga.top.unit, YGUnitPoint);
+  view.yoga.top = YGPercentValue(6);
+  XCTAssertEqual(view.yoga.top.value, 6);
+  XCTAssertEqual(view.yoga.top.unit, YGUnitPercent);
 
-  view.yoga.bottom = 4;
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeBottom).value, 4);
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.bottom, 4);
+  view.yoga.bottom = YGPointValue(7);
+  XCTAssertEqual(view.yoga.bottom.value, 7);
+  XCTAssertEqual(view.yoga.bottom.unit, YGUnitPoint);
+  view.yoga.bottom = YGPercentValue(8);
+  XCTAssertEqual(view.yoga.bottom.value, 8);
+  XCTAssertEqual(view.yoga.bottom.unit, YGUnitPercent);
 
-  view.yoga.start = 5;
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeStart).value, 5);
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.start, 5);
+  view.yoga.start = YGPointValue(9);
+  XCTAssertEqual(view.yoga.start.value, 9);
+  XCTAssertEqual(view.yoga.start.unit, YGUnitPoint);
+  view.yoga.start = YGPercentValue(10);
+  XCTAssertEqual(view.yoga.start.value, 10);
+  XCTAssertEqual(view.yoga.start.unit, YGUnitPercent);
 
-  view.yoga.end = 6;
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeEnd).value, 6);
-  XCTAssertEqual(YGNodeStyleGetPosition(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.end, 6);
+  view.yoga.end = YGPointValue(11);
+  XCTAssertEqual(view.yoga.end.value, 11);
+  XCTAssertEqual(view.yoga.end.unit, YGUnitPoint);
+  view.yoga.end = YGPercentValue(12);
+  XCTAssertEqual(view.yoga.end.value, 12);
+  XCTAssertEqual(view.yoga.end.unit, YGUnitPercent);
 }
 
 - (void)testMarginPropertiesWork
 {
   UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
 
-  view.yoga.margin = 1;
-  XCTAssertEqual(view.yoga.marginLeft, 1);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginRight, 1);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginStart, 1);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginEnd, 1);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginTop, 1);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginBottom, 1);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertTrue(isnan(view.yoga.marginHorizontal));
-  XCTAssertTrue(isnan(view.yoga.marginVertical));
-  XCTAssertTrue(isnan(view.yoga.margin));
+  view.yoga.margin = YGPointValue(1);
+  XCTAssertEqual(view.yoga.margin.value, 1);
+  XCTAssertEqual(view.yoga.margin.unit, YGUnitPoint);
+  view.yoga.margin = YGPercentValue(2);
+  XCTAssertEqual(view.yoga.margin.value, 2);
+  XCTAssertEqual(view.yoga.margin.unit, YGUnitPercent);
 
-  view.yoga.marginHorizontal = 2;
-  XCTAssertEqual(view.yoga.marginLeft, 2);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginRight, 2);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginStart, 2);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginEnd, 2);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertTrue(isnan(view.yoga.marginHorizontal));
+  view.yoga.marginHorizontal = YGPointValue(3);
+  XCTAssertEqual(view.yoga.marginHorizontal.value, 3);
+  XCTAssertEqual(view.yoga.marginHorizontal.unit, YGUnitPoint);
+  view.yoga.marginHorizontal = YGPercentValue(4);
+  XCTAssertEqual(view.yoga.marginHorizontal.value, 4);
+  XCTAssertEqual(view.yoga.marginHorizontal.unit, YGUnitPercent);
 
-  view.yoga.marginVertical = 3;
-  XCTAssertEqual(view.yoga.marginTop, 3);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginBottom, 3);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertTrue(isnan(view.yoga.marginVertical));
+  view.yoga.marginVertical = YGPointValue(5);
+  XCTAssertEqual(view.yoga.marginVertical.value, 5);
+  XCTAssertEqual(view.yoga.marginVertical.unit, YGUnitPoint);
+  view.yoga.marginVertical = YGPercentValue(6);
+  XCTAssertEqual(view.yoga.marginVertical.value, 6);
+  XCTAssertEqual(view.yoga.marginVertical.unit, YGUnitPercent);
 
-  view.yoga.marginLeft = 4;
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeLeft).value, 4);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginLeft, 4);
+  view.yoga.marginLeft = YGPointValue(7);
+  XCTAssertEqual(view.yoga.marginLeft.value, 7);
+  XCTAssertEqual(view.yoga.marginLeft.unit, YGUnitPoint);
+  view.yoga.marginLeft = YGPercentValue(8);
+  XCTAssertEqual(view.yoga.marginLeft.value, 8);
+  XCTAssertEqual(view.yoga.marginLeft.unit, YGUnitPercent);
 
-  view.yoga.marginRight = 5;
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeRight).value, 5);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginRight, 5);
+  view.yoga.marginRight = YGPointValue(9);
+  XCTAssertEqual(view.yoga.marginRight.value, 9);
+  XCTAssertEqual(view.yoga.marginRight.unit, YGUnitPoint);
+  view.yoga.marginRight = YGPercentValue(10);
+  XCTAssertEqual(view.yoga.marginRight.value, 10);
+  XCTAssertEqual(view.yoga.marginRight.unit, YGUnitPercent);
 
-  view.yoga.marginTop = 6;
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeTop).value, 6);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginTop, 6);
+  view.yoga.marginTop = YGPointValue(11);
+  XCTAssertEqual(view.yoga.marginTop.value, 11);
+  XCTAssertEqual(view.yoga.marginTop.unit, YGUnitPoint);
+  view.yoga.marginTop = YGPercentValue(12);
+  XCTAssertEqual(view.yoga.marginTop.value, 12);
+  XCTAssertEqual(view.yoga.marginTop.unit, YGUnitPercent);
 
-  view.yoga.marginBottom = 7;
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeBottom).value, 7);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginBottom, 7);
+  view.yoga.marginBottom = YGPointValue(13);
+  XCTAssertEqual(view.yoga.marginBottom.value, 13);
+  XCTAssertEqual(view.yoga.marginBottom.unit, YGUnitPoint);
+  view.yoga.marginBottom = YGPercentValue(14);
+  XCTAssertEqual(view.yoga.marginBottom.value, 14);
+  XCTAssertEqual(view.yoga.marginBottom.unit, YGUnitPercent);
 
-  view.yoga.marginStart = 8;
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeStart).value, 8);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginStart, 8);
+  view.yoga.marginStart = YGPointValue(15);
+  XCTAssertEqual(view.yoga.marginStart.value, 15);
+  XCTAssertEqual(view.yoga.marginStart.unit, YGUnitPoint);
+  view.yoga.marginStart = YGPercentValue(16);
+  XCTAssertEqual(view.yoga.marginStart.value, 16);
+  XCTAssertEqual(view.yoga.marginStart.unit, YGUnitPercent);
 
-  view.yoga.marginEnd = 9;
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeEnd).value, 9);
-  XCTAssertEqual(YGNodeStyleGetMargin(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.marginEnd, 9);
+  view.yoga.marginEnd = YGPointValue(17);
+  XCTAssertEqual(view.yoga.marginEnd.value, 17);
+  XCTAssertEqual(view.yoga.marginEnd.unit, YGUnitPoint);
+  view.yoga.marginEnd = YGPercentValue(18);
+  XCTAssertEqual(view.yoga.marginEnd.value, 18);
+  XCTAssertEqual(view.yoga.marginEnd.unit, YGUnitPercent);
 }
 
 - (void)testPaddingPropertiesWork
 {
   UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
 
-  view.yoga.padding = 1;
-  XCTAssertEqual(view.yoga.paddingLeft, 1);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingRight, 1);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingStart, 1);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingEnd, 1);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingTop, 1);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingBottom, 1);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertTrue(isnan(view.yoga.paddingHorizontal));
-  XCTAssertTrue(isnan(view.yoga.paddingVertical));
-  XCTAssertTrue(isnan(view.yoga.padding));
+  view.yoga.padding = YGPointValue(1);
+  XCTAssertEqual(view.yoga.padding.value, 1);
+  XCTAssertEqual(view.yoga.padding.unit, YGUnitPoint);
+  view.yoga.padding = YGPercentValue(2);
+  XCTAssertEqual(view.yoga.padding.value, 2);
+  XCTAssertEqual(view.yoga.padding.unit, YGUnitPercent);
 
-  view.yoga.paddingHorizontal = 2;
-  XCTAssertEqual(view.yoga.paddingLeft, 2);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingRight, 2);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingStart, 2);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingEnd, 2);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertTrue(isnan(view.yoga.paddingHorizontal));
+  view.yoga.paddingHorizontal = YGPointValue(3);
+  XCTAssertEqual(view.yoga.paddingHorizontal.value, 3);
+  XCTAssertEqual(view.yoga.paddingHorizontal.unit, YGUnitPoint);
+  view.yoga.paddingHorizontal = YGPercentValue(4);
+  XCTAssertEqual(view.yoga.paddingHorizontal.value, 4);
+  XCTAssertEqual(view.yoga.paddingHorizontal.unit, YGUnitPercent);
 
-  view.yoga.paddingVertical = 3;
-  XCTAssertEqual(view.yoga.paddingTop, 3);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingBottom, 3);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertTrue(isnan(view.yoga.paddingVertical));
+  view.yoga.paddingVertical = YGPointValue(5);
+  XCTAssertEqual(view.yoga.paddingVertical.value, 5);
+  XCTAssertEqual(view.yoga.paddingVertical.unit, YGUnitPoint);
+  view.yoga.paddingVertical = YGPercentValue(6);
+  XCTAssertEqual(view.yoga.paddingVertical.value, 6);
+  XCTAssertEqual(view.yoga.paddingVertical.unit, YGUnitPercent);
 
-  view.yoga.paddingLeft = 4;
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeLeft).value, 4);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeLeft).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingLeft, 4);
+  view.yoga.paddingLeft = YGPointValue(7);
+  XCTAssertEqual(view.yoga.paddingLeft.value, 7);
+  XCTAssertEqual(view.yoga.paddingLeft.unit, YGUnitPoint);
+  view.yoga.paddingLeft = YGPercentValue(8);
+  XCTAssertEqual(view.yoga.paddingLeft.value, 8);
+  XCTAssertEqual(view.yoga.paddingLeft.unit, YGUnitPercent);
 
-  view.yoga.paddingRight = 5;
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeRight).value, 5);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeRight).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingRight, 5);
+  view.yoga.paddingRight = YGPointValue(9);
+  XCTAssertEqual(view.yoga.paddingRight.value, 9);
+  XCTAssertEqual(view.yoga.paddingRight.unit, YGUnitPoint);
+  view.yoga.paddingRight = YGPercentValue(10);
+  XCTAssertEqual(view.yoga.paddingRight.value, 10);
+  XCTAssertEqual(view.yoga.paddingRight.unit, YGUnitPercent);
 
-  view.yoga.paddingTop = 6;
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeTop).value, 6);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeTop).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingTop, 6);
+  view.yoga.paddingTop = YGPointValue(11);
+  XCTAssertEqual(view.yoga.paddingTop.value, 11);
+  XCTAssertEqual(view.yoga.paddingTop.unit, YGUnitPoint);
+  view.yoga.paddingTop = YGPercentValue(12);
+  XCTAssertEqual(view.yoga.paddingTop.value, 12);
+  XCTAssertEqual(view.yoga.paddingTop.unit, YGUnitPercent);
 
-  view.yoga.paddingBottom = 7;
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeBottom).value, 7);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeBottom).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingBottom, 7);
+  view.yoga.paddingBottom = YGPointValue(13);
+  XCTAssertEqual(view.yoga.paddingBottom.value, 13);
+  XCTAssertEqual(view.yoga.paddingBottom.unit, YGUnitPoint);
+  view.yoga.paddingBottom = YGPercentValue(14);
+  XCTAssertEqual(view.yoga.paddingBottom.value, 14);
+  XCTAssertEqual(view.yoga.paddingBottom.unit, YGUnitPercent);
 
-  view.yoga.paddingStart = 8;
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeStart).value, 8);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeStart).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingStart, 8);
+  view.yoga.paddingStart = YGPointValue(15);
+  XCTAssertEqual(view.yoga.paddingStart.value, 15);
+  XCTAssertEqual(view.yoga.paddingStart.unit, YGUnitPoint);
+  view.yoga.paddingStart = YGPercentValue(16);
+  XCTAssertEqual(view.yoga.paddingStart.value, 16);
+  XCTAssertEqual(view.yoga.paddingStart.unit, YGUnitPercent);
 
-  view.yoga.paddingEnd = 9;
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeEnd).value, 9);
-  XCTAssertEqual(YGNodeStyleGetPadding(view.yoga.node, YGEdgeEnd).unit, YGUnitPixel);
-  XCTAssertEqual(view.yoga.paddingEnd, 9);
+  view.yoga.paddingEnd = YGPointValue(17);
+  XCTAssertEqual(view.yoga.paddingEnd.value, 17);
+  XCTAssertEqual(view.yoga.paddingEnd.unit, YGUnitPoint);
+  view.yoga.paddingEnd = YGPercentValue(18);
+  XCTAssertEqual(view.yoga.paddingEnd.value, 18);
+  XCTAssertEqual(view.yoga.paddingEnd.unit, YGUnitPercent);
 }
 
 - (void)testBorderWidthPropertiesWork
@@ -591,13 +718,7 @@
   UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
 
   view.yoga.borderWidth = 1;
-  XCTAssertEqual(view.yoga.borderLeftWidth, 1);
-  XCTAssertEqual(view.yoga.borderRightWidth, 1);
-  XCTAssertEqual(view.yoga.borderStartWidth, 1);
-  XCTAssertEqual(view.yoga.borderEndWidth, 1);
-  XCTAssertEqual(view.yoga.borderTopWidth, 1);
-  XCTAssertEqual(view.yoga.borderBottomWidth, 1);
-  XCTAssertTrue(isnan(view.yoga.borderWidth));
+  XCTAssertEqual(view.yoga.borderWidth, 1);
 
   view.yoga.borderLeftWidth = 2;
   XCTAssertEqual(view.yoga.borderLeftWidth, 2);

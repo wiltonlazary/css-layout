@@ -13,8 +13,10 @@ function toValueCpp(value) {
 }
 
 function toFunctionName(value) {
-  if (value.indexOf('%') >= 0){
+  if (value.indexOf('%') >= 0) {
     return 'Percent';
+  } else if(value.indexOf('Auto') >= 0) {
+    return 'Auto';
   }
   return '';
 }
@@ -28,8 +30,8 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
 
   emitPrologue:{value:function() {
     this.push([
-      '#include <yoga/Yoga.h>',
       '#include <gtest/gtest.h>',
+      '#include <yoga/Yoga.h>',
       '',
     ]);
   }},
@@ -38,16 +40,15 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
     this.push('TEST(YogaTest, ' + name + ') {');
     this.pushIndent();
 
-    if (experiments.length > 0) {
-      for (var i in experiments) {
-        this.push('YGSetExperimentalFeatureEnabled(YGExperimentalFeature' + experiments[i] +', true);');
-      }
-      this.push('');
+    this.push('const YGConfigRef config = YGConfigNew();')
+    for (var i in experiments) {
+      this.push('YGConfigSetExperimentalFeatureEnabled(config, YGExperimentalFeature' + experiments[i] +', true);');
     }
+    this.push('');
   }},
 
   emitTestTreePrologue:{value:function(nodeName) {
-    this.push('const YGNodeRef ' + nodeName + ' = YGNodeNew();');
+    this.push('const YGNodeRef ' + nodeName + ' = YGNodeNewWithConfig(config);');
   }},
 
   emitTestEpilogue:{value:function(experiments) {
@@ -56,12 +57,8 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
       'YGNodeFreeRecursive(root);',
     ]);
 
-    if (experiments.length > 0) {
-      this.push('');
-      for (var i in experiments) {
-        this.push('YGSetExperimentalFeatureEnabled(YGExperimentalFeature' + experiments[i] +', false);');
-      }
-    }
+    this.push('');
+    this.push('YGConfigFree(config);')
 
     this.popIndent();
     this.push([
@@ -82,7 +79,8 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
   YGAlignFlexEnd:{value:'YGAlignFlexEnd'},
   YGAlignFlexStart:{value:'YGAlignFlexStart'},
   YGAlignStretch:{value:'YGAlignStretch'},
-
+  YGAlignSpaceBetween:{value:'YGAlignSpaceBetween'},
+  YGAlignSpaceAround:{value:'YGAlignSpaceAround'},
   YGAlignBaseline:{value:'YGAlignBaseline'},
 
   YGDirectionInherit:{value:'YGDirectionInherit'},
@@ -115,10 +113,16 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
 
   YGWrapNoWrap:{value:'YGWrapNoWrap'},
   YGWrapWrap:{value:'YGWrapWrap'},
+  YGWrapWrapReverse:{value: 'YGWrapWrapReverse'},
 
   YGUndefined:{value:'YGUndefined'},
 
-  YGNodeCalculateLayout:{value:function(node, dir) {
+  YGDisplayFlex:{value:'YGDisplayFlex'},
+  YGDisplayNone:{value:'YGDisplayNone'},
+  YGAuto:{value:'YGAuto'},
+
+
+  YGNodeCalculateLayout:{value:function(node, dir, experiments) {
     this.push('YGNodeCalculateLayout(' + node + ', YGUndefined, YGUndefined, ' + dir + ');');
   }},
 
@@ -162,6 +166,10 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
     this.push('YGNodeStyleSetDirection(' + nodeName + ', ' + toValueCpp(value) + ');');
   }},
 
+  YGNodeStyleSetDisplay:{value:function(nodeName, value) {
+    this.push('YGNodeStyleSetDisplay(' + nodeName + ', ' + toValueCpp(value) + ');');
+  }},
+
   YGNodeStyleSetFlexBasis:{value:function(nodeName, value) {
     this.push('YGNodeStyleSetFlexBasis' + toFunctionName(value) + '(' + nodeName + ', ' + toValueCpp(value) + ');');
   }},
@@ -191,7 +199,13 @@ CPPEmitter.prototype = Object.create(Emitter.prototype, {
   }},
 
   YGNodeStyleSetMargin:{value:function(nodeName, edge, value) {
-    this.push('YGNodeStyleSetMargin' + toFunctionName(value) + '(' + nodeName + ', ' + edge + ', ' + toValueCpp(value) + ');');
+    var valueStr = toValueCpp(value);
+    if (valueStr != 'YGAuto') {
+      valueStr = ', ' + valueStr;
+    } else {
+      valueStr = '';
+    }
+    this.push('YGNodeStyleSetMargin' + toFunctionName(value) + '(' + nodeName + ', ' + edge +  valueStr + ');');
   }},
 
   YGNodeStyleSetMaxHeight:{value:function(nodeName, value) {

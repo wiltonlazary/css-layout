@@ -14,6 +14,7 @@ var JavascriptEmitter = function() {
 function toValueJavascript(value) {
   if (value.match(/^[0-9.e+-]+px$/i)) return parseFloat(value);
   if (value.match(/^[0-9.e+-]+%/i)) return JSON.stringify(value);
+  if (value == 'Yoga.AUTO') return '"auto"';
   return value;
 }
 
@@ -42,36 +43,39 @@ JavascriptEmitter.prototype = Object.create(Emitter.prototype, {
   emitTestPrologue:{value:function(name, experiments) {
     this.push('it(' + JSON.stringify(name) + ', function () {');
     this.pushIndent();
+    this.push('var config = Yoga.Config.create();');
+    this.push('');
 
     if (experiments.length > 0) {
       for (var i in experiments) {
-        this.push('Yoga.setExperimentalFeatureEnabled(Yoga.FEATURE_' + toJavascriptUpper(experiments[i]) + ', true);');
+        this.push('config.setExperimentalFeatureEnabled(Yoga.EXPERIMENTAL_FEATURE_' + toJavascriptUpper(experiments[i]) + ', true);');
       }
       this.push('');
     }
+
+    this.push('try {');
+    this.pushIndent();
   }},
 
   emitTestTreePrologue:{value:function(nodeName) {
-    this.push('var ' + nodeName + ' = Yoga.Node.create();');
+    this.push('var ' + nodeName + ' = Yoga.Node.create(config);');
   }},
 
   emitTestEpilogue:{value:function(experiments) {
-    this.push('');
-    this.push('if (typeof root !== "undefined")');
+    this.popIndent();
+    this.push('} finally {');
+    this.pushIndent();
+
+    this.push('if (typeof root !== "undefined") {');
     this.pushIndent();
     this.push('root.freeRecursive();');
     this.popIndent();
-
+    this.push('}');
     this.push('');
-    this.push('(typeof gc !== "undefined") && gc();');
-    this.AssertEQ('0', 'Yoga.getInstanceCount()');
+    this.push('config.free();');
 
-    if (experiments.length > 0) {
-      this.push('');
-      for (var i in experiments) {
-        this.push('Yoga.setExperimentalFeatureEnabled(Yoga.FEATURE_' + toJavascriptUpper(experiments[i]) + ', false);');
-      }
-    }
+    this.popIndent();
+    this.push('}');
 
     this.popIndent();
     this.push('});');
@@ -90,6 +94,8 @@ JavascriptEmitter.prototype = Object.create(Emitter.prototype, {
   YGAlignFlexEnd:{value:'Yoga.ALIGN_FLEX_END'},
   YGAlignFlexStart:{value:'Yoga.ALIGN_FLEX_START'},
   YGAlignStretch:{value:'Yoga.ALIGN_STRETCH'},
+  YGAlignSpaceBetween:{value:'Yoga.ALIGN_SPACE_BETWEEN'},
+  YGAlignSpaceAround:{value:'Yoga.ALIGN_SPACE_AROUND'},
   YGAlignBaseline:{value:'Yoga.ALIGN_BASELINE'},
 
   YGDirectionInherit:{value:'Yoga.DIRECTION_INHERIT'},
@@ -120,12 +126,18 @@ JavascriptEmitter.prototype = Object.create(Emitter.prototype, {
   YGPositionTypeAbsolute:{value:'Yoga.POSITION_TYPE_ABSOLUTE'},
   YGPositionTypeRelative:{value:'Yoga.POSITION_TYPE_RELATIVE'},
 
+  YGAuto:{value:'Yoga.AUTO'},
+
   YGWrapNoWrap:{value:'Yoga.WRAP_NO_WRAP'},
   YGWrapWrap:{value:'Yoga.WRAP_WRAP'},
+  YGWrapWrapReverse:{value: 'Yoga.WRAP_WRAP_REVERSE'},
 
   YGUndefined:{value:'Yoga.UNDEFINED'},
 
-  YGNodeCalculateLayout:{value:function(node, dir) {
+  YGDisplayFlex:{value:'Yoga.DISPLAY_FLEX'},
+  YGDisplayNone:{value:'Yoga.DISPLAY_NONE'},
+
+  YGNodeCalculateLayout:{value:function(node, dir, experiments) {
     this.push(node + '.calculateLayout(Yoga.UNDEFINED, Yoga.UNDEFINED, ' + dir + ');');
   }},
 
@@ -167,6 +179,10 @@ JavascriptEmitter.prototype = Object.create(Emitter.prototype, {
 
   YGNodeStyleSetDirection:{value:function(nodeName, value) {
     this.push(nodeName + '.setDirection(' + toValueJavascript(value) + ');');
+  }},
+
+  YGNodeStyleSetDisplay:{value:function(nodeName, value) {
+    this.push(nodeName + '.setDisplay(' + toValueJavascript(value) + ');');
   }},
 
   YGNodeStyleSetFlexBasis:{value:function(nodeName, value) {

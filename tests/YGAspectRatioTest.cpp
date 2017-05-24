@@ -7,15 +7,15 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#include <yoga/Yoga.h>
 #include <gtest/gtest.h>
+#include <yoga/Yoga.h>
 
 static YGSize _measure(YGNodeRef node,
-                        float width,
-                        YGMeasureMode widthMode,
-                        float height,
-                        YGMeasureMode heightMode) {
-  return YGSize {
+                       float width,
+                       YGMeasureMode widthMode,
+                       float height,
+                       YGMeasureMode heightMode) {
+  return YGSize{
       .width = widthMode == YGMeasureModeExactly ? width : 50,
       .height = heightMode == YGMeasureModeExactly ? height : 50,
   };
@@ -276,7 +276,7 @@ TEST(YogaTest, aspect_ratio_with_max_main_defined) {
 
   ASSERT_EQ(0, YGNodeLayoutGetLeft(root_child0));
   ASSERT_EQ(0, YGNodeLayoutGetTop(root_child0));
-  ASSERT_EQ(50, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_EQ(40, YGNodeLayoutGetWidth(root_child0));
   ASSERT_EQ(40, YGNodeLayoutGetHeight(root_child0));
 
   YGNodeFreeRecursive(root);
@@ -320,7 +320,7 @@ TEST(YogaTest, aspect_ratio_with_min_main_defined) {
 
   ASSERT_EQ(0, YGNodeLayoutGetLeft(root_child0));
   ASSERT_EQ(0, YGNodeLayoutGetTop(root_child0));
-  ASSERT_EQ(30, YGNodeLayoutGetWidth(root_child0));
+  ASSERT_EQ(40, YGNodeLayoutGetWidth(root_child0));
   ASSERT_EQ(40, YGNodeLayoutGetHeight(root_child0));
 
   YGNodeFreeRecursive(root);

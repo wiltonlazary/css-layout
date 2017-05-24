@@ -10,14 +10,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)BaselineFunction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MeasureFunction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MeasureOutput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Native.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YGConfigHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YGNodeHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaAlign.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaBaselineFunc.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YogaConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaDimension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaDirection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)YogaDisplay.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaEdge.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaExperimentalFeature.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)YogaFlexDirection.cs" />

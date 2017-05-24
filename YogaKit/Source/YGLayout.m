@@ -21,32 +21,30 @@
   YGNodeStyleSet##capitalized_name(self.node, lowercased_name); \
 }
 
-#define YG_VALUE_PROPERTY(lowercased_name, capitalized_name)    \
-- (CGFloat)lowercased_name                                      \
-{                                                               \
-  YGValue value = YGNodeStyleGet##capitalized_name(self.node);  \
-  if (value.unit == YGUnitPixel) {                              \
-    return value.value;                                         \
-  } else {                                                      \
-    return YGUndefined;                                         \
-  }                                                             \
-}                                                               \
-                                                                \
-- (void)set##capitalized_name:(CGFloat)lowercased_name          \
-{                                                               \
-  YGNodeStyleSet##capitalized_name(self.node, lowercased_name); \
-}
-
-#define YG_EDGE_PROPERTY_GETTER(lowercased_name, capitalized_name, property, edge) \
-- (CGFloat)lowercased_name                                                         \
+#define YG_VALUE_PROPERTY(lowercased_name, capitalized_name)                       \
+- (YGValue)lowercased_name                                                         \
 {                                                                                  \
-  return YGNodeStyleGet##property(self.node, edge);                                \
+  return YGNodeStyleGet##capitalized_name(self.node);                              \
+}                                                                                  \
+                                                                                   \
+- (void)set##capitalized_name:(YGValue)lowercased_name                             \
+{                                                                                  \
+  switch (lowercased_name.unit) {                                                  \
+    case YGUnitPoint:                                                              \
+      YGNodeStyleSet##capitalized_name(self.node, lowercased_name.value);          \
+      break;                                                                       \
+    case YGUnitPercent:                                                            \
+      YGNodeStyleSet##capitalized_name##Percent(self.node, lowercased_name.value); \
+      break;                                                                       \
+    default:                                                                       \
+      NSAssert(NO, @"Not implemented");                                            \
+  }                                                                                \
 }
 
-#define YG_SHORTHAND_EDGE_PROPERTY_GETTER(lowercased_name) \
-- (CGFloat)lowercased_name                                 \
-{                                                          \
-  return YGUndefined;                                      \
+#define YG_EDGE_PROPERTY_GETTER(type, lowercased_name, capitalized_name, property, edge) \
+- (type)lowercased_name                                                                  \
+{                                                                                        \
+  return YGNodeStyleGet##property(self.node, edge);                                      \
 }
 
 #define YG_EDGE_PROPERTY_SETTER(lowercased_name, capitalized_name, property, edge) \
@@ -55,49 +53,51 @@
   YGNodeStyleSet##property(self.node, edge, lowercased_name);                      \
 }
 
-#define YG_EDGE_PROPERTY(lowercased_name, capitalized_name, property, edge) \
-YG_EDGE_PROPERTY_GETTER(lowercased_name, capitalized_name, property, edge)  \
+#define YG_EDGE_PROPERTY(lowercased_name, capitalized_name, property, edge)         \
+YG_EDGE_PROPERTY_GETTER(CGFloat, lowercased_name, capitalized_name, property, edge) \
 YG_EDGE_PROPERTY_SETTER(lowercased_name, capitalized_name, property, edge)
 
-#define YG_SHORTHAND_EDGE_PROPERTY(lowercased_name, capitalized_name, property, edge) \
-YG_SHORTHAND_EDGE_PROPERTY_GETTER(lowercased_name)                                    \
-YG_EDGE_PROPERTY_SETTER(lowercased_name, capitalized_name, property, edge)
-
-#define YG_VALUE_EDGE_PROPERTY_GETTER(objc_lowercased_name, objc_capitalized_name, c_name, edge) \
-- (CGFloat)objc_lowercased_name                                                                  \
+#define YG_VALUE_EDGE_PROPERTY_SETTER(objc_lowercased_name, objc_capitalized_name, c_name, edge) \
+- (void)set##objc_capitalized_name:(YGValue)objc_lowercased_name                                 \
 {                                                                                                \
-  YGValue value = YGNodeStyleGet##c_name(self.node, edge);                                       \
-  if (value.unit == YGUnitPixel) {                                                               \
-    return value.value;                                                                          \
-  } else {                                                                                       \
-    return YGUndefined;                                                                          \
+  switch (objc_lowercased_name.unit) {                                                           \
+    case YGUnitPoint:                                                                            \
+      YGNodeStyleSet##c_name(self.node, edge, objc_lowercased_name.value);                       \
+      break;                                                                                     \
+    case YGUnitPercent:                                                                          \
+      YGNodeStyleSet##c_name##Percent(self.node, edge, objc_lowercased_name.value);              \
+      break;                                                                                     \
+    default:                                                                                     \
+      NSAssert(NO, @"Not implemented");                                                          \
   }                                                                                              \
 }
 
-#define YG_VALUE_EDGE_PROPERTY_SETTER(objc_lowercased_name, objc_capitalized_name, c_name, edge) \
-- (void)set##objc_capitalized_name:(CGFloat)objc_lowercased_name                                 \
-{                                                                                                \
-  YGNodeStyleSet##c_name(self.node, edge, objc_lowercased_name);                                 \
+#define YG_VALUE_EDGE_PROPERTY(lowercased_name, capitalized_name, property, edge)   \
+YG_EDGE_PROPERTY_GETTER(YGValue, lowercased_name, capitalized_name, property, edge) \
+YG_VALUE_EDGE_PROPERTY_SETTER(lowercased_name, capitalized_name, property, edge)
+
+#define YG_VALUE_EDGES_PROPERTIES(lowercased_name, capitalized_name)                                                  \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Left, capitalized_name##Left, capitalized_name, YGEdgeLeft)                   \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Top, capitalized_name##Top, capitalized_name, YGEdgeTop)                      \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Right, capitalized_name##Right, capitalized_name, YGEdgeRight)                \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Bottom, capitalized_name##Bottom, capitalized_name, YGEdgeBottom)             \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Start, capitalized_name##Start, capitalized_name, YGEdgeStart)                \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##End, capitalized_name##End, capitalized_name, YGEdgeEnd)                      \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Horizontal, capitalized_name##Horizontal, capitalized_name, YGEdgeHorizontal) \
+YG_VALUE_EDGE_PROPERTY(lowercased_name##Vertical, capitalized_name##Vertical, capitalized_name, YGEdgeVertical)       \
+YG_VALUE_EDGE_PROPERTY(lowercased_name, capitalized_name, capitalized_name, YGEdgeAll)
+
+YGValue YGPointValue(CGFloat value)
+{
+  return (YGValue) { .value = value, .unit = YGUnitPoint };
 }
 
-#define YG_VALUE_EDGE_PROPERTY(lowercased_name, capitalized_name, property, edge) \
-YG_VALUE_EDGE_PROPERTY_GETTER(lowercased_name, capitalized_name, property, edge)  \
-YG_VALUE_EDGE_PROPERTY_SETTER(lowercased_name, capitalized_name, property, edge)
+YGValue YGPercentValue(CGFloat value)
+{
+  return (YGValue) { .value = value, .unit = YGUnitPercent };
+}
 
-#define YG_VALUE_SHORTHAND_EDGE_PROPERTY(lowercased_name, capitalized_name, property, edge) \
-YG_SHORTHAND_EDGE_PROPERTY_GETTER(lowercased_name)                                          \
-YG_VALUE_EDGE_PROPERTY_SETTER(lowercased_name, capitalized_name, property, edge)
-
-#define YG_VALUE_EDGES_PROPERTIES(lowercased_name, capitalized_name)                                                            \
-YG_VALUE_EDGE_PROPERTY(lowercased_name##Left, capitalized_name##Left, capitalized_name, YGEdgeLeft)                             \
-YG_VALUE_EDGE_PROPERTY(lowercased_name##Top, capitalized_name##Top, capitalized_name, YGEdgeTop)                                \
-YG_VALUE_EDGE_PROPERTY(lowercased_name##Right, capitalized_name##Right, capitalized_name, YGEdgeRight)                          \
-YG_VALUE_EDGE_PROPERTY(lowercased_name##Bottom, capitalized_name##Bottom, capitalized_name, YGEdgeBottom)                       \
-YG_VALUE_EDGE_PROPERTY(lowercased_name##Start, capitalized_name##Start, capitalized_name, YGEdgeStart)                          \
-YG_VALUE_EDGE_PROPERTY(lowercased_name##End, capitalized_name##End, capitalized_name, YGEdgeEnd)                                \
-YG_VALUE_SHORTHAND_EDGE_PROPERTY(lowercased_name##Horizontal, capitalized_name##Horizontal, capitalized_name, YGEdgeHorizontal) \
-YG_VALUE_SHORTHAND_EDGE_PROPERTY(lowercased_name##Vertical, capitalized_name##Vertical, capitalized_name, YGEdgeVertical)       \
-YG_VALUE_SHORTHAND_EDGE_PROPERTY(lowercased_name, capitalized_name, capitalized_name, YGEdgeAll)
+static YGConfigRef globalConfig;
 
 @interface YGLayout ()
 
@@ -113,14 +113,16 @@ YG_VALUE_SHORTHAND_EDGE_PROPERTY(lowercased_name, capitalized_name, capitalized_
 
 + (void)initialize
 {
-  YGSetExperimentalFeatureEnabled(YGExperimentalFeatureWebFlexBasis, true);
+  globalConfig = YGConfigNew();
+  YGConfigSetExperimentalFeatureEnabled(globalConfig, YGExperimentalFeatureWebFlexBasis, true);
+  YGConfigSetPointScaleFactor(globalConfig, [UIScreen mainScreen].scale);
 }
 
 - (instancetype)initWithView:(UIView*)view
 {
   if (self = [super init]) {
     _view = view;
-    _node = YGNodeNew();
+    _node = YGNodeNewWithConfig(globalConfig);
     YGNodeSetContext(_node, (__bridge void *) view);
     _isEnabled = NO;
     _isIncludedInLayout = YES;
@@ -134,11 +136,26 @@ YG_VALUE_SHORTHAND_EDGE_PROPERTY(lowercased_name, capitalized_name, capitalized_
   YGNodeFree(self.node);
 }
 
+- (BOOL)isDirty
+{
+  return YGNodeIsDirty(self.node);
+}
+
 - (void)markDirty
 {
-  if (self.isLeaf) {
-    YGNodeMarkDirty(self.node);
+  if (self.isDirty || !self.isLeaf) {
+    return;
   }
+
+  // Yoga is not happy if we try to mark a node as "dirty" before we have set
+  // the measure function. Since we already know that this is a leaf,
+  // this *should* be fine. Forgive me Hack Gods.
+  const YGNodeRef node = self.node;
+  if (YGNodeGetMeasureFunc(node) == NULL) {
+    YGNodeSetMeasureFunc(node, YGMeasureView);
+  }
+
+  YGNodeMarkDirty(node);
 }
 
 - (NSUInteger)numberOfChildren
@@ -181,6 +198,7 @@ YG_PROPERTY(YGAlign, alignItems, AlignItems)
 YG_PROPERTY(YGAlign, alignSelf, AlignSelf)
 YG_PROPERTY(YGWrap, flexWrap, FlexWrap)
 YG_PROPERTY(YGOverflow, overflow, Overflow)
+YG_PROPERTY(YGDisplay, display, Display)
 
 YG_PROPERTY(CGFloat, flexGrow, FlexGrow)
 YG_PROPERTY(CGFloat, flexShrink, FlexShrink)
@@ -201,7 +219,7 @@ YG_EDGE_PROPERTY(borderRightWidth, BorderRightWidth, Border, YGEdgeRight)
 YG_EDGE_PROPERTY(borderBottomWidth, BorderBottomWidth, Border, YGEdgeBottom)
 YG_EDGE_PROPERTY(borderStartWidth, BorderStartWidth, Border, YGEdgeStart)
 YG_EDGE_PROPERTY(borderEndWidth, BorderEndWidth, Border, YGEdgeEnd)
-YG_SHORTHAND_EDGE_PROPERTY(borderWidth, BorderWidth, Border, YGEdgeAll)
+YG_EDGE_PROPERTY(borderWidth, BorderWidth, Border, YGEdgeAll)
 
 YG_VALUE_PROPERTY(width, Width)
 YG_VALUE_PROPERTY(height, Height)
@@ -221,8 +239,28 @@ YG_PROPERTY(CGFloat, aspectRatio, AspectRatio)
 - (void)applyLayout
 {
   [self calculateLayoutWithSize:self.view.bounds.size];
-  YGApplyLayoutToViewHierarchy(self.view);
+  YGApplyLayoutToViewHierarchy(self.view, NO);
 }
+
+- (void)applyLayoutPreservingOrigin:(BOOL)preserveOrigin
+{
+  [self calculateLayoutWithSize:self.view.bounds.size];
+  YGApplyLayoutToViewHierarchy(self.view, preserveOrigin);
+}
+
+- (void)applyLayoutPreservingOrigin:(BOOL)preserveOrigin dimensionFlexibility:(YGDimensionFlexibility)dimensionFlexibility
+{
+  CGSize size = self.view.bounds.size;
+  if (dimensionFlexibility & YGDimensionFlexibilityFlexibleWidth) {
+    size.width = YGUndefined;
+  }
+  if (dimensionFlexibility & YGDimensionFlexibilityFlexibleHeigth) {
+    size.height = YGUndefined;
+  }
+  [self calculateLayoutWithSize:size];
+  YGApplyLayoutToViewHierarchy(self.view, preserveOrigin);
+}
+
 
 - (CGSize)intrinsicSize
 {
@@ -232,8 +270,6 @@ YG_PROPERTY(CGFloat, aspectRatio, AspectRatio)
   };
   return [self calculateLayoutWithSize:constrainedSize];
 }
-
-#pragma mark - Private
 
 - (CGSize)calculateLayoutWithSize:(CGSize)size
 {
@@ -254,6 +290,8 @@ YG_PROPERTY(CGFloat, aspectRatio, AspectRatio)
     .height = YGNodeLayoutGetHeight(node),
   };
 }
+
+#pragma mark - Private
 
 static YGSize YGMeasureView(
   YGNodeRef node,
@@ -360,10 +398,10 @@ static CGFloat YGRoundPixelValue(CGFloat value)
     scale = [UIScreen mainScreen].scale;
   });
 
-  return round(value * scale) / scale;
+  return roundf(value * scale) / scale;
 }
 
-static void YGApplyLayoutToViewHierarchy(UIView *view)
+static void YGApplyLayoutToViewHierarchy(UIView *view, BOOL preserveOrigin)
 {
   NSCAssert([NSThread isMainThread], @"Framesetting should only be done on the main thread.");
 
@@ -384,10 +422,11 @@ static void YGApplyLayoutToViewHierarchy(UIView *view)
     topLeft.y + YGNodeLayoutGetHeight(node),
   };
 
+  const CGPoint origin = preserveOrigin ? view.frame.origin : CGPointZero;
   view.frame = (CGRect) {
     .origin = {
-      .x = YGRoundPixelValue(topLeft.x),
-      .y = YGRoundPixelValue(topLeft.y),
+      .x = YGRoundPixelValue(topLeft.x + origin.x),
+      .y = YGRoundPixelValue(topLeft.y + origin.y),
     },
     .size = {
       .width = YGRoundPixelValue(bottomRight.x) - YGRoundPixelValue(topLeft.x),
@@ -397,7 +436,7 @@ static void YGApplyLayoutToViewHierarchy(UIView *view)
 
   if (!yoga.isLeaf) {
     for (NSUInteger i=0; i<view.subviews.count; i++) {
-      YGApplyLayoutToViewHierarchy(view.subviews[i]);
+      YGApplyLayoutToViewHierarchy(view.subviews[i], NO);
     }
   }
 }

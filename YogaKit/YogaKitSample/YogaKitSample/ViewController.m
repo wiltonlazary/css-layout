@@ -10,10 +10,6 @@
 
 #import <YogaKit/UIView+Yoga.h>
 
-@interface ViewController ()
-
-@end
-
 @implementation ViewController
 
 - (void)viewDidLoad
@@ -21,16 +17,16 @@
     UIView *root = self.view;
     root.backgroundColor = [UIColor redColor];
     root.yoga.isEnabled = YES;
-    root.yoga.width = self.view.bounds.size.width;
-    root.yoga.height = self.view.bounds.size.height;
+    root.yoga.width = YGPointValue(self.view.bounds.size.width);
+    root.yoga.height = YGPointValue(self.view.bounds.size.height);
     root.yoga.alignItems = YGAlignCenter;
     root.yoga.justifyContent = YGJustifyCenter;
 
     UIView *child1 = [UIView new];
     child1.backgroundColor = [UIColor blueColor];
     child1.yoga.isEnabled = YES;
-    child1.yoga.width = 100;
-    child1.yoga.height = 100;
+    child1.yoga.width = YGPointValue(100);
+    child1.yoga.height = YGPointValue(100);
 
     UIView *child2 = [UIView new];
     child2.backgroundColor = [UIColor greenColor];
@@ -53,7 +49,7 @@
     [child2 addSubview:child3];
     [root addSubview:child1];
     [root addSubview:child2];
-    [root.yoga applyLayout];
+    [root.yoga applyLayoutPreservingOrigin:NO];
 }
 
 

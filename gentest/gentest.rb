@@ -9,7 +9,7 @@ caps = Selenium::WebDriver::Remote::Capabilities.chrome(
     "performance"=>"ALL"
   }
 )
-browser = Watir::Browser.new(:chrome, :desired_capabilities => caps)
+browser = Watir::Browser.new(:chrome, :desired_capabilities => caps, :switches => ['--force-device-scale-factor=1', '--window-position=0,0'])
 Dir.chdir(File.dirname($0))
 
 Dir['fixtures/*.html'].each do |file|
@@ -47,6 +47,8 @@ Dir['fixtures/*.html'].each do |file|
   f = File.open("../csharp/tests/Facebook.Yoga/#{name}.cs", 'w')
   f.write eval(logs[2].message.sub(/^[^"]*/, '')).sub('YogaTest', name)
   f.close
+
+  print logs[4]
 
   f = File.open("../javascript/tests/Facebook.Yoga/#{name}.js", 'w')
   f.write eval(logs[3].message.sub(/^[^"]*/, '')).sub('YogaTest', name)

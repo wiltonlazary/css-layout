@@ -1,6 +1,6 @@
 {
     "name": "yoga-layout",
-    "version": "1.0.1",
+    "version": "1.5.0",
     "description": "Yoga is a cross-platform layout engine enabling maximum collaboration within your team by implementing an API many designers are familiar with, and opening it up to developers across different platforms.",
     "license": "BSD-3-Clause",
     "repository": {
@@ -11,6 +11,10 @@
     "main": "./sources/entry-node",
     "browser": "./sources/entry-browser",
 
+    "config": {
+        "platform": "all"
+    },
+
     "scripts": {
 
         "which": "which",
@@ -19,13 +23,13 @@
         "emcc-path": "emcc-path",
 
         "is-monolithic": "test \"$(basename \"$(pwd)\")\" = javascript",
-        "copy-sources": "! npm -- run is-monolithic || (rsync -r --checksum --delete ../yoga/ sources/yoga/)",
+        "copy-sources": "! npm -s -- run is-monolithic || (rsync -r --checksum --delete ../yoga/ sources/yoga/)",
 
         "build:node": "npm -- run copy-sources && npm -- run node-gyp configure build",
         "build:browser": "npm -- run copy-sources && npm -- run node-gyp configure build --asmjs=1",
         "build:standalone": "webpack",
         "build:all": "npm -- run build:node && npm -- run build:browser && npm -- run build:standalone",
-        "build": "npm -- run build:all",
+        "build": "cross-env \"npm --if-present -- run build:$npm_package_config_platform\"",
 
         "test:node": "TEST_ENTRY=node time mocha --expose-gc -r tests/tools.js tests/Facebook.Yoga/**/*.js",
         "test:browser": "TEST_ENTRY=browser time mocha --expose-gc -r tests/tools.js tests/Facebook.Yoga/**/*.js",
@@ -50,8 +54,8 @@
 
     "devDependencies": {
 
+        "cross-env": "^4.0.0",
         "mocha": "^3.2.0",
         "webpack": "^2.2.0-rc.2"
-
     }
 }

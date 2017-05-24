@@ -73,25 +73,22 @@ namespace Facebook.Yoga
         }
 
         [Test]
-        [ExpectedException("System.NullReferenceException")]
         public void TestRemoveAtFromEmpty()
         {
             YogaNode parent = new YogaNode();
-            parent.RemoveAt(0);
+            Assert.Throws<NullReferenceException>(() => parent.RemoveAt(0));
         }
 
         [Test]
-        [ExpectedException("System.ArgumentOutOfRangeException")]
         public void TestRemoveAtOutOfRange()
         {
             YogaNode parent = new YogaNode();
             YogaNode child = new YogaNode();
             parent.Insert(0, child);
-            parent.RemoveAt(1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => parent.RemoveAt(1));
         }
 
         [Test]
-        [ExpectedException("System.InvalidOperationException")]
         public void TestCannotAddChildToMultipleParents()
         {
             YogaNode parent1 = new YogaNode();
@@ -99,7 +96,7 @@ namespace Facebook.Yoga
             YogaNode child = new YogaNode();
 
             parent1.Insert(0, child);
-            parent2.Insert(0, child);
+            Assert.Throws<InvalidOperationException>(() => parent2.Insert(0, child));
         }
 
         [Test]
@@ -113,23 +110,21 @@ namespace Facebook.Yoga
         }
 
         [Test]
-        [ExpectedException("System.InvalidOperationException")]
         public void TestResetParent()
         {
             YogaNode parent = new YogaNode();
             YogaNode child = new YogaNode();
             parent.Insert(0, child);
-            parent.Reset();
+            Assert.Throws<InvalidOperationException>(() => parent.Reset());
         }
 
         [Test]
-        [ExpectedException("System.InvalidOperationException")]
         public void TestResetChild()
         {
             YogaNode parent = new YogaNode();
             YogaNode child = new YogaNode();
             parent.Insert(0, child);
-            child.Reset();
+            Assert.Throws<InvalidOperationException>(() => child.Reset());
         }
 
         [Test]
@@ -169,12 +164,19 @@ namespace Facebook.Yoga
                 return MeasureOutput.Make(123.4f, 81.7f);
             });
             node.CalculateLayout();
+            Assert.AreEqual(124.0f, node.LayoutWidth);
+            Assert.AreEqual(82.0f, node.LayoutHeight);
+
+            node = new YogaNode(new YogaConfig{PointScaleFactor = 0});
+            node.SetMeasureFunction((_, width, widthMode, height, heightMode) => {
+                return MeasureOutput.Make(123.4f, 81.7f);
+            });
+            node.CalculateLayout();
             Assert.AreEqual(123.4f, node.LayoutWidth);
             Assert.AreEqual(81.7f, node.LayoutHeight);
         }
 
         [Test]
-        [ExpectedException("System.InvalidOperationException")]
         public void TestChildWithMeasureFunc()
         {
             YogaNode node = new YogaNode();
@@ -182,19 +184,20 @@ namespace Facebook.Yoga
                 return MeasureOutput.Make(100, 150);
             });
             YogaNode child = new YogaNode();
-            node.Insert(0, child);
+            Assert.Throws<InvalidOperationException>(() => node.Insert(0, child));
         }
 
         [Test]
-        [ExpectedException("System.InvalidOperationException")]
         public void TestMeasureFuncWithChild()
         {
             YogaNode node = new YogaNode();
             YogaNode child = new YogaNode();
             node.Insert(0, child);
-            node.SetMeasureFunction((_, width, widthMode, height, heightMode) => {
-                return MeasureOutput.Make(100, 150);
-            });
+            Assert.Throws<InvalidOperationException>(() =>
+                node.SetMeasureFunction((_, width, widthMode, height, heightMode) => {
+                    return MeasureOutput.Make(100, 150);
+                })
+            );
         }
 
         [Test]
@@ -246,6 +249,26 @@ namespace Facebook.Yoga
         }
 
         [Test]
+        public void TestPrintOneNode()
+        {
+            YogaNode node = new YogaNode();
+            node.Width = 100;
+            node.Height = 120;
+            node.CalculateLayout();
+            Assert.AreEqual("<div layout=\"width: 100; height: 120; top: 0; left: 0;\" style=\"width: 100px; height: 120px; \" ></div>", node.Print());
+        }
+
+        [Test]
+        public void TestPrintWithLogger()
+        {
+            YogaNode node = new YogaNode(new YogaConfig{Logger = (c, n, l, m) => {}});
+            node.Width = 110;
+            node.Height = 105;
+            node.CalculateLayout();
+            Assert.AreEqual("<div layout=\"width: 110; height: 105; top: 0; left: 0;\" style=\"width: 110px; height: 105px; \" ></div>", node.Print());
+        }
+
+        [Test]
         public void TestPrint()
         {
             YogaNode parent = new YogaNode();
@@ -260,7 +283,7 @@ namespace Facebook.Yoga
             parent.Insert(0, child0);
             parent.Insert(0, child1);
             parent.CalculateLayout();
-            Assert.AreEqual("{layout: {width: 100, height: 120, top: 0, left: 0}, flexDirection: 'column', alignItems: 'stretch', flexGrow: 0, flexShrink: 0, overflow: 'visible', width: 100px, height: 120px, children: [\n  {layout: {width: 35, height: 45, top: 0, left: 0}, flexDirection: 'column', alignItems: 'stretch', flexGrow: 0, flexShrink: 0, overflow: 'visible', width: 35px, height: 45px, },\n  {layout: {width: 30, height: 40, top: 45, left: 0}, flexDirection: 'column', alignItems: 'stretch', flexGrow: 0, flexShrink: 0, overflow: 'visible', width: 30px, height: 40px, },\n]},\n", parent.Print());
+            Assert.AreEqual("<div layout=\"width: 100; height: 120; top: 0; left: 0;\" style=\"width: 100px; height: 120px; \" >\n  <div layout=\"width: 35; height: 45; top: 0; left: 0;\" style=\"width: 35px; height: 45px; \" ></div>\n  <div layout=\"width: 30; height: 40; top: 45; left: 0;\" style=\"width: 30px; height: 40px; \" ></div>\n</div>", parent.Print());
         }
 
         [Test]
@@ -273,7 +296,7 @@ namespace Facebook.Yoga
             node1.MaxHeight = 100;
 
             node0.CopyStyle(node1);
-            Assert.AreEqual(100.Px(), node0.MaxHeight);
+            Assert.AreEqual(100.Pt(), node0.MaxHeight);
         }
 
         [Test]
@@ -283,32 +306,33 @@ namespace Facebook.Yoga
             node0.MaxWidth = 80;
 
             YogaNode node1 = new YogaNode(node0);
-            Assert.AreEqual(80.Px(), node1.MaxWidth);
+            Assert.AreEqual(80.Pt(), node1.MaxWidth);
 
             YogaNode node2 = new YogaNode(node1)
             {
                 MaxHeight = 90,
             };
-            Assert.AreEqual(80.Px(), node2.MaxWidth);
-            Assert.AreEqual(90.Px(), node2.MaxHeight);
+            Assert.AreEqual(80.Pt(), node2.MaxWidth);
+            Assert.AreEqual(90.Pt(), node2.MaxHeight);
 
             YogaNode node3 = new YogaNode(node0)
             {
                 MaxWidth = 100,
             };
-            Assert.AreEqual(100.Px(), node3.MaxWidth);
+            Assert.AreEqual(100.Pt(), node3.MaxWidth);
 
             YogaNode node4 = new YogaNode(node2)
             {
                 MaxWidth = 100,
             };
-            Assert.AreEqual(100.Px(), node4.MaxWidth);
-            Assert.AreEqual(90.Px(), node4.MaxHeight);
+            Assert.AreEqual(100.Pt(), node4.MaxWidth);
+            Assert.AreEqual(90.Pt(), node4.MaxHeight);
         }
 
-        private void ForceGC()
+#if !UNITY_5_4_OR_NEWER
+        public static void ForceGC()
         {
-            GC.Collect(GC.MaxGeneration);
+            GC.Collect();
             GC.WaitForPendingFinalizers();
         }
 
@@ -365,6 +389,7 @@ namespace Facebook.Yoga
             child = null;
         }
 
+#if YOGA_ENABLE_GC_TEST
         [Test]
         public void TestParentDestructor()
         {
@@ -386,6 +411,7 @@ namespace Facebook.Yoga
             Assert.AreEqual(instanceCount + 1, YogaNode.GetInstanceCount());
             parent.Insert(0, child);
         }
+#endif
 
         [Test]
         public void TestClearWithChildDestructor()
@@ -433,6 +459,7 @@ namespace Facebook.Yoga
                 return MeasureOutput.Make(120, 130);
             });
         }
+#endif
 
         [Test]
         public void TestLayoutMargin() {

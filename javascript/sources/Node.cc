@@ -14,6 +14,7 @@
 #include "./Node.hh"
 #include "./Layout.hh"
 #include "./Size.hh"
+#include "./Config.hh"
 
 static YGSize globalMeasureFunc(YGNodeRef nodeRef, float width, YGMeasureMode widthMode, float height, YGMeasureMode heightMode)
 {
@@ -25,9 +26,14 @@ static YGSize globalMeasureFunc(YGNodeRef nodeRef, float width, YGMeasureMode wi
     return ygSize;
 }
 
-/* static */ Node * Node::create(void)
+/* static */ Node * Node::createDefault(void)
 {
-    return new Node();
+    return new Node(nullptr);
+}
+
+/* static */ Node * Node::createWithConfig(Config * config)
+{
+    return new Node(config);
 }
 
 /* static */ void Node::destroy(Node * node)
@@ -40,8 +46,8 @@ static YGSize globalMeasureFunc(YGNodeRef nodeRef, float width, YGMeasureMode wi
     return reinterpret_cast<Node *>(YGNodeGetContext(nodeRef));
 }
 
-Node::Node(void)
-: m_node(YGNodeNew())
+Node::Node(Config * config)
+: m_node(config != nullptr ? YGNodeNewWithConfig(config->m_config) : YGNodeNew())
 , m_measureFunc(nullptr)
 {
     YGNodeSetContext(m_node, reinterpret_cast<void *>(this));
@@ -119,9 +125,19 @@ void Node::setMarginPercent(int edge, double margin)
     YGNodeStyleSetMarginPercent(m_node, static_cast<YGEdge>(edge), margin);
 }
 
+void Node::setMarginAuto(int edge)
+{
+    YGNodeStyleSetMarginAuto(m_node, static_cast<YGEdge>(edge));
+}
+
 void Node::setOverflow(int overflow)
 {
     YGNodeStyleSetOverflow(m_node, static_cast<YGOverflow>(overflow));
+}
+
+void Node::setDisplay(int display)
+{
+    YGNodeStyleSetDisplay(m_node, static_cast<YGDisplay>(display));
 }
 
 void Node::setFlex(double flex)
@@ -159,6 +175,11 @@ void Node::setWidthPercent(double width)
     YGNodeStyleSetWidthPercent(m_node, width);
 }
 
+void Node::setWidthAuto()
+{
+    YGNodeStyleSetWidthAuto(m_node);
+}
+
 void Node::setHeight(double height)
 {
     YGNodeStyleSetHeight(m_node, height);
@@ -167,6 +188,11 @@ void Node::setHeight(double height)
 void Node::setHeightPercent(double height)
 {
     YGNodeStyleSetHeightPercent(m_node, height);
+}
+
+void Node::setHeightAuto()
+{
+    YGNodeStyleSetHeightAuto(m_node);
 }
 
 void Node::setMinWidth(double minWidth)
@@ -277,6 +303,11 @@ Value Node::getMargin(int edge) const
 int Node::getOverflow(void) const
 {
     return YGNodeStyleGetOverflow(m_node);
+}
+
+int Node::getDisplay(void) const
+{
+    return YGNodeStyleGetDisplay(m_node);
 }
 
 Value Node::getFlexBasis(void) const
