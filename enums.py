@@ -35,6 +35,7 @@ ENUMS = {
         'FlexEnd',
         'SpaceBetween',
         'SpaceAround',
+        'SpaceEvenly',
     ],
     'Overflow': [
         'Visible',
@@ -161,7 +162,7 @@ with open(root + '/yoga/YGEnums.h', 'w') as f:
     f.write('YG_EXTERN_C_END\n')
 
 # write out C body for printing
-with open(root + '/yoga/YGEnums.c', 'w') as f:
+with open(root + '/yoga/YGEnums.cpp', 'w') as f:
     f.write(LICENSE)
     f.write('#include "YGEnums.h"\n\n')
     for name, values in sorted(ENUMS.items()):
@@ -181,7 +182,7 @@ with open(root + '/yoga/YGEnums.c', 'w') as f:
 # write out java files
 for name, values in sorted(ENUMS.items()):
     with open(root + '/java/com/facebook/yoga/Yoga%s.java' % name, 'w') as f:
-        f.write(LICENSE)
+        f.write(LICENSE.replace('/**', '/*', 1))
         f.write('package com.facebook.yoga;\n\n')
         f.write('import com.facebook.proguard.annotations.DoNotStrip;\n\n')
         f.write('@DoNotStrip\n')

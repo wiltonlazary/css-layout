@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name = 'Yoga'
-  spec.version = '1.6.0'
+  spec.version = '1.7.0'
   spec.license =  { :type => 'BSD', :file => "LICENSE" }
   spec.homepage = 'https://facebook.github.io/yoga/'
   spec.documentation_url = 'https://facebook.github.io/yoga/docs/api/c/'
@@ -11,7 +11,7 @@ Pod::Spec.new do |spec|
   spec.authors = 'Facebook'
   spec.source = {
     :git => 'https://github.com/facebook/yoga.git',
-    :tag => '1.6.0',
+    :tag => '1.7.0',
   }
 
   spec.module_name = 'yoga'
@@ -21,8 +21,8 @@ Pod::Spec.new do |spec|
       '-fexceptions',
       '-Wall',
       '-Werror',
-      '-std=c11',
+      '-std=c++1y',
       '-fPIC'
   ]
-  spec.source_files = 'yoga/**/*.{c,h}'
+  spec.source_files = 'yoga/**/*.{c,h,cpp}'
 end

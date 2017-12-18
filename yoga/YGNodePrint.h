@@ -6,16 +6,19 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+#pragma once
+#include <string>
 
-namespace Facebook.Yoga
-{
-    public enum YogaJustify
-    {
-        FlexStart,
-        Center,
-        FlexEnd,
-        SpaceBetween,
-        SpaceAround,
-        SpaceEvenly,
-    }
-}
+#include "Yoga.h"
+
+namespace facebook {
+namespace yoga {
+
+void YGNodeToString(
+    std::string* str,
+    YGNodeRef node,
+    YGPrintOptions options,
+    uint32_t level);
+
+} // namespace yoga
+} // namespace facebook

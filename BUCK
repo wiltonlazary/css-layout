@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree. An additional grant
 # of patent rights can be found in the PATENTS file in the same directory.
 
-include_defs("//YOGA_DEFS")
+load("//:yoga_defs.bzl", "LIBRARY_COMPILER_FLAGS", "BASE_COMPILER_FLAGS", "GTEST_TARGET", "yoga_dep", "cxx_library", "cxx_test")
 
 GMOCK_OVERRIDE_FLAGS = [
     # gmock does not mark mocked methods as override, ignore the warnings in tests
@@ -13,21 +13,24 @@ GMOCK_OVERRIDE_FLAGS = [
 ]
 
 COMPILER_FLAGS = LIBRARY_COMPILER_FLAGS + [
-    "-std=c11",
+    "-std=c++1y",
+    "-Wno-global-constructors",
 ]
 
-TEST_COMPILER_FLAGS = BASE_COMPILER_FLAGS + GMOCK_OVERRIDE_FLAGS + ["-std=c++11"]
+TEST_COMPILER_FLAGS = BASE_COMPILER_FLAGS + GMOCK_OVERRIDE_FLAGS + [
+    "-std=c++1y",
+]
 
 cxx_library(
     name = "yoga",
-    srcs = glob(["yoga/*.c"]),
+    srcs = glob(["yoga/*.cpp"]),
     header_namespace = "",
     exported_headers = subdir_glob([("", "yoga/*.h")]),
     compiler_flags = COMPILER_FLAGS,
     soname = "libyogacore.$(ext)",
     tests = [":YogaTests"],
     visibility = ["PUBLIC"],
-    deps = [] if THIS_IS_FBOBJC else [
+    deps = [
         yoga_dep("lib/fb:ndklog"),
     ],
 )
