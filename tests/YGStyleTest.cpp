@@ -1,14 +1,12 @@
-/**
- * Copyright (c) 2014-present, Facebook, Inc.
- * All rights reserved.
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the LICENSE
+ * file in the root directory of this source tree.
  */
-
 #include <gtest/gtest.h>
 #include <yoga/YGNode.h>
+#include <iostream>
 
 TEST(YogaTest, copy_style_same) {
   const YGNodeRef node0 = YGNodeNew();
@@ -57,4 +55,27 @@ TEST(YogaTest, copy_style_modified_same) {
 
   YGNodeFree(node0);
   YGNodeFree(node1);
+}
+
+TEST(YogaTest, initialise_flexShrink_flexGrow) {
+  const YGNodeRef node0 = YGNodeNew();
+  YGNodeStyleSetFlexShrink(node0, 1);
+  ASSERT_EQ(1, YGNodeStyleGetFlexShrink(node0));
+
+  YGNodeStyleSetFlexShrink(node0, YGUndefined);
+  YGNodeStyleSetFlexGrow(node0, 3);
+  ASSERT_EQ(
+      0,
+      YGNodeStyleGetFlexShrink(
+          node0)); // Default value is Zero, if flex shrink is not defined
+  ASSERT_EQ(3, YGNodeStyleGetFlexGrow(node0));
+
+  YGNodeStyleSetFlexGrow(node0, YGUndefined);
+  YGNodeStyleSetFlexShrink(node0, 3);
+  ASSERT_EQ(
+      0,
+      YGNodeStyleGetFlexGrow(
+          node0)); // Default value is Zero, if flex grow is not defined
+  ASSERT_EQ(3, YGNodeStyleGetFlexShrink(node0));
+  YGNodeFree(node0);
 }

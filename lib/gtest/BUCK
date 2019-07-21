@@ -1,18 +1,23 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
-
-load("//:yoga_defs.bzl", "cxx_library", "YOGA_ROOTS")
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+load("//tools/build_defs/oss:yoga_defs.bzl", "YOGA_ROOTS", "subdir_glob", "yoga_cxx_library", "yoga_prebuilt_cxx_library")
 
 COMPILER_FLAGS = [
-    "-std=c++11",
+    "-std=c++14",
     "-Wno-missing-prototypes",
 ]
 
-cxx_library(
+yoga_prebuilt_cxx_library(
+    name = "pthread",
+    exported_linker_flags = [
+        "-lpthread",
+    ],
+    header_only = True,
+)
+
+yoga_cxx_library(
     name = "gtest",
     srcs = glob(["googletest/googletest/src/*.cc"]),
     header_namespace = "",
@@ -23,5 +28,7 @@ cxx_library(
     ]),
     compiler_flags = COMPILER_FLAGS,
     visibility = YOGA_ROOTS,
-    deps = [],
+    deps = [
+        ":pthread",
+    ],
 )

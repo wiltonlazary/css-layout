@@ -1,13 +1,29 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc.
- * All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow
+ * @format
  */
 
-var nbind = require('nbind');
-var ret = nbind.init(__dirname + '/../');
+const Yoga = require('./entry-common');
+const nbind = require('nbind');
+const {bind, lib} = nbind.init(__dirname + '/../');
+module.exports = Yoga(bind, lib);
+export type {
+  Yoga$JustifyContent,
+  Yoga$Align,
+  Yoga$FlexDirection,
+  Yoga$Direction,
+  Yoga$FlexWrap,
+  Yoga$Edge,
+  Yoga$Display,
+  Yoga$Unit,
+  Yoga$Overflow,
+  Yoga$PositionType,
+  Yoga$ExperimentalFeature,
+} from './YGEnums.js';
 
-module.exports = require('./entry-common')(ret.bind, ret.lib);
+export type {Yoga$Node, Yoga$Config} from './entry-common';

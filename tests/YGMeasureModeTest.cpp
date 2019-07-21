@@ -1,12 +1,9 @@
-/**
- * Copyright (c) 2014-present, Facebook, Inc.
- * All rights reserved.
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the LICENSE
+ * file in the root directory of this source tree.
  */
-
 #include <gtest/gtest.h>
 #include <yoga/YGNode.h>
 #include <yoga/Yoga.h>
@@ -20,17 +17,18 @@ struct _MeasureConstraint {
 
 struct _MeasureConstraintList {
   uint32_t length;
-  struct _MeasureConstraint *constraints;
+  struct _MeasureConstraint* constraints;
 };
 
-static YGSize _measure(YGNodeRef node,
-                       float width,
-                       YGMeasureMode widthMode,
-                       float height,
-                       YGMeasureMode heightMode) {
+static YGSize _measure(
+    YGNodeRef node,
+    float width,
+    YGMeasureMode widthMode,
+    float height,
+    YGMeasureMode heightMode) {
   struct _MeasureConstraintList* constraintList =
-      (struct _MeasureConstraintList*)node->getContext();
-  struct _MeasureConstraint *constraints = constraintList->constraints;
+      (struct _MeasureConstraintList*) node->getContext();
+  struct _MeasureConstraint* constraints = constraintList->constraints;
   uint32_t currentIndex = constraintList->length;
   (&constraints[currentIndex])->width = width;
   (&constraints[currentIndex])->widthMode = widthMode;
@@ -47,7 +45,8 @@ static YGSize _measure(YGNodeRef node,
 TEST(YogaTest, exactly_measure_stretched_child_column) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -63,7 +62,7 @@ TEST(YogaTest, exactly_measure_stretched_child_column) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].width);
   ASSERT_EQ(YGMeasureModeExactly, constraintList.constraints[0].widthMode);
@@ -75,7 +74,8 @@ TEST(YogaTest, exactly_measure_stretched_child_column) {
 TEST(YogaTest, exactly_measure_stretched_child_row) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -91,7 +91,7 @@ TEST(YogaTest, exactly_measure_stretched_child_row) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].height);
   ASSERT_EQ(YGMeasureModeExactly, constraintList.constraints[0].heightMode);
@@ -103,7 +103,8 @@ TEST(YogaTest, exactly_measure_stretched_child_row) {
 TEST(YogaTest, at_most_main_axis_column) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -117,7 +118,7 @@ TEST(YogaTest, at_most_main_axis_column) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].height);
   ASSERT_EQ(YGMeasureModeAtMost, constraintList.constraints[0].heightMode);
@@ -129,7 +130,8 @@ TEST(YogaTest, at_most_main_axis_column) {
 TEST(YogaTest, at_most_cross_axis_column) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -144,7 +146,7 @@ TEST(YogaTest, at_most_cross_axis_column) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].width);
   ASSERT_EQ(YGMeasureModeAtMost, constraintList.constraints[0].widthMode);
@@ -156,7 +158,8 @@ TEST(YogaTest, at_most_cross_axis_column) {
 TEST(YogaTest, at_most_main_axis_row) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -171,7 +174,7 @@ TEST(YogaTest, at_most_main_axis_row) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].width);
   ASSERT_EQ(YGMeasureModeAtMost, constraintList.constraints[0].widthMode);
@@ -183,7 +186,8 @@ TEST(YogaTest, at_most_main_axis_row) {
 TEST(YogaTest, at_most_cross_axis_row) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -199,7 +203,7 @@ TEST(YogaTest, at_most_cross_axis_row) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].height);
   ASSERT_EQ(YGMeasureModeAtMost, constraintList.constraints[0].heightMode);
@@ -211,7 +215,8 @@ TEST(YogaTest, at_most_cross_axis_row) {
 TEST(YogaTest, flex_child) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -225,7 +230,7 @@ TEST(YogaTest, flex_child) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(2, constraintList.length);
+  ASSERT_EQ(2u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].height);
   ASSERT_EQ(YGMeasureModeAtMost, constraintList.constraints[0].heightMode);
@@ -240,7 +245,8 @@ TEST(YogaTest, flex_child) {
 TEST(YogaTest, flex_child_with_flex_basis) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -255,7 +261,7 @@ TEST(YogaTest, flex_child_with_flex_basis) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].height);
   ASSERT_EQ(YGMeasureModeExactly, constraintList.constraints[0].heightMode);
@@ -267,7 +273,8 @@ TEST(YogaTest, flex_child_with_flex_basis) {
 TEST(YogaTest, overflow_scroll_column) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -283,7 +290,7 @@ TEST(YogaTest, overflow_scroll_column) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_FLOAT_EQ(100, constraintList.constraints[0].width);
   ASSERT_EQ(YGMeasureModeAtMost, constraintList.constraints[0].widthMode);
@@ -298,7 +305,8 @@ TEST(YogaTest, overflow_scroll_column) {
 TEST(YogaTest, overflow_scroll_row) {
   struct _MeasureConstraintList constraintList = _MeasureConstraintList{
       .length = 0,
-      .constraints = (struct _MeasureConstraint *) malloc(10 * sizeof(struct _MeasureConstraint)),
+      .constraints = (struct _MeasureConstraint*) malloc(
+          10 * sizeof(struct _MeasureConstraint)),
   };
 
   const YGNodeRef root = YGNodeNew();
@@ -315,7 +323,7 @@ TEST(YogaTest, overflow_scroll_row) {
 
   YGNodeCalculateLayout(root, YGUndefined, YGUndefined, YGDirectionLTR);
 
-  ASSERT_EQ(1, constraintList.length);
+  ASSERT_EQ(1u, constraintList.length);
 
   ASSERT_TRUE(YGFloatIsUndefined(constraintList.constraints[0].width));
   ASSERT_EQ(YGMeasureModeUndefined, constraintList.constraints[0].widthMode);

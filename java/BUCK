@@ -1,24 +1,33 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
-load("//:yoga_defs.bzl", "FBJNI_TARGET", "JNI_TARGET", "INFER_ANNOTATIONS_TARGET", "JSR_305_TARGET", "PROGRUARD_ANNOTATIONS_TARGET", "SOLOADER_TARGET", "JUNIT_TARGET", "FBJNI_JAVA_TARGET", "CXX_LIBRARY_WHITELIST", "yoga_dep", "cxx_library", "java_library", "java_test", "java_binary")
+load("//tools/build_defs/oss:yoga_defs.bzl", "ANDROID", "CXX_LIBRARY_WHITELIST", "FBJNI_JAVA_TARGET", "FBJNI_TARGET", "INFER_ANNOTATIONS_TARGET", "JNI_TARGET", "JSR_305_TARGET", "JUNIT_TARGET", "PROGRUARD_ANNOTATIONS_TARGET", "SOLOADER_TARGET", "yoga_cxx_lib", "yoga_cxx_library", "yoga_dep", "yoga_java_binary", "yoga_java_library", "yoga_java_test")
 
-cxx_library(
+CXX_LIBRARY_WHITELIST_FOR_TESTS = CXX_LIBRARY_WHITELIST + [
+    yoga_cxx_lib("testutil:jni"),
+    yoga_cxx_lib("testutil:testutil"),
+]
+
+yoga_cxx_library(
     name = "jni",
     srcs = glob(["jni/*.cpp"]),
-    header_namespace = "",
+    header_namespace = "yoga/java",
+    exported_headers = glob(["jni/*.h"]),
+    allow_jni_merging = True,
     compiler_flags = [
         "-fno-omit-frame-pointer",
         "-fexceptions",
         "-fPIC",
         "-Wall",
         "-Werror",
-        "-O3",
+        "-Os",
         "-std=c++11",
+    ],
+    platforms = ANDROID,
+    preprocessor_flags = [
+        "-DFBJNI_WITH_FAST_CALLS",
     ],
     soname = "libyoga.$(ext)",
     visibility = ["PUBLIC"],
@@ -29,7 +38,7 @@ cxx_library(
     ],
 )
 
-java_library(
+yoga_java_library(
     name = "java",
     srcs = glob(["com/facebook/yoga/*.java"]),
     required_for_source_only_abi = True,
@@ -41,6 +50,7 @@ java_library(
     visibility = ["PUBLIC"],
     deps = [
         ":jni",
+        FBJNI_JAVA_TARGET,
         INFER_ANNOTATIONS_TARGET,
         JSR_305_TARGET,
         PROGRUARD_ANNOTATIONS_TARGET,
@@ -48,19 +58,20 @@ java_library(
     ],
 )
 
-java_test(
+yoga_java_test(
     name = "tests",
     srcs = glob(["tests/**/*.java"]),
-    cxx_library_whitelist = CXX_LIBRARY_WHITELIST,
+    cxx_library_whitelist = CXX_LIBRARY_WHITELIST_FOR_TESTS,
     use_cxx_libraries = True,
     visibility = ["PUBLIC"],
     deps = [
         ":java",
+        yoga_dep("testutil:java"),
         JUNIT_TARGET,
     ],
 )
 
-java_binary(
+yoga_java_binary(
     name = "yoga",
     deps = [
         ":java",

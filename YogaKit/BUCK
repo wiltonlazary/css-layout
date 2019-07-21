@@ -1,11 +1,8 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
-
-load("//:yoga_defs.bzl", "yoga_dep", "apple_library", "apple_test")
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+load("//tools/build_defs/oss:yoga_defs.bzl", "subdir_glob", "yoga_apple_library", "yoga_apple_test", "yoga_dep")
 
 COMPILER_FLAGS = [
     "-fobjc-arc",
@@ -27,9 +24,10 @@ COMPILER_FLAGS = [
     "-Wunused-value",
 ]
 
-apple_library(
+yoga_apple_library(
     name = "YogaKit",
     srcs = glob(["Source/**/*.m"]),
+    header_namespace = "",
     exported_headers = subdir_glob(
         [
             ("", "Source/**/*.h"),
@@ -50,7 +48,7 @@ apple_library(
     ],
 )
 
-apple_test(
+yoga_apple_test(
     name = "YogaKitTests",
     srcs = glob(["Tests/**/*.m"]),
     compiler_flags = COMPILER_FLAGS,
