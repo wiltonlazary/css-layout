@@ -1,7 +1,7 @@
 # Yoga [![CocoaPods](https://img.shields.io/cocoapods/v/YogaKit.svg)](http://cocoapods.org/pods/YogaKit) [![npm](https://img.shields.io/npm/v/yoga-layout.svg)](https://www.npmjs.com/package/yoga-layout) [![bintray](https://img.shields.io/bintray/v/facebook/maven/com.facebook.yoga:yoga.svg)](https://bintray.com/facebook/maven/com.facebook.yoga%3Ayoga/_latestVersion) [![NuGet](https://img.shields.io/nuget/v/Facebook.Yoga.svg)](https://www.nuget.org/packages/Facebook.Yoga)
 
 ## Building
-Yoga builds with [buck](https://buckbuild.com). Make sure you install buck before contributing to Yoga. Yoga's main implementation is in C, with bindings to supported languages and frameworks. When making changes to Yoga please ensure the changes are also propagated to these bindings when applicable.
+Yoga builds with [buck](https://buckbuild.com). Make sure you install buck before contributing to Yoga. Yoga's main implementation is in C++, with bindings to supported languages and frameworks. When making changes to Yoga please ensure the changes are also propagated to these bindings when applicable.
 
 ## Testing
 For testing we rely on [gtest](https://github.com/google/googletest) as a submodule. After cloning Yoga run `git submodule init` followed by `git submodule update`.
@@ -46,3 +46,29 @@ This will now only run the standalone webpack build upon install.
 | node           | Builds node js version.                         |
 | standalone     | Runs webpack.                                   |
 | none           | Does nothing. You can use the prepackaged libs. |
+
+## Maintainer Release Guide
+
+To publish a new release, follow these steps:
+
+1. Ensure you have your GPG key set up and your [OSS Sonatype](https://oss.sonatype.org/) credentials handy.
+2. Add the follow entries to either your local `gradle.properties` (don't forget to revert) or your global `~/.gradle/gradle.properties`:
+
+```
+# You get these from https://oss.sonatype.org/#profile;User%20Token
+mavenCentralRepositoryUsername=<username>
+mavenCentralRepositoryPassword=<password>
+
+# You can get the keyId (in GPG 1.4 format) by running `gpg1 --list-keys`.
+signing.secretKeyRingFile=</path/to/secring.gpg>
+signing.keyId=<key_id>
+signing.password=<key_password>
+```
+
+3. Change the `VERSION_NAME` in `gradle.properties` to a non-SNAPSHOT release.
+4. Commit and land the version change.
+5. Run `./gradlew publishToMaven`.
+6. Run `./gradlew closeAndReleaseRepository`.
+7. Change the `VERSION_NAME` in `gradle.properties` back to a new SNAPSHOT release.
+8. Commit and land the version change.
+9. Celebrate! You've made a release!

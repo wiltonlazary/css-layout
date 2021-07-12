@@ -1,9 +1,10 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the MIT license found in the LICENSE
- * file in the root directory of this source tree.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.yoga;
 
 import static org.junit.Assert.assertEquals;
@@ -204,7 +205,7 @@ public class YogaNodeTest {
 
   @Test
   public void testUseWebDefaults() {
-    final YogaConfig config = new YogaConfig();
+    final YogaConfig config = YogaConfigFactory.create();
     config.setUseWebDefaults(true);
     final YogaNode node = createNode(config);
     assertEquals(YogaFlexDirection.ROW, node.getFlexDirection());
@@ -236,7 +237,7 @@ public class YogaNodeTest {
 
   @Test
   public void testFlagShouldDiffLayoutWithoutLegacyStretchBehaviour() throws Exception {
-    YogaConfig config = new YogaConfig();
+    YogaConfig config = YogaConfigFactory.create();
     config.setShouldDiffLayoutWithoutLegacyStretchBehaviour(true);
     config.setUseLegacyStretchBehaviour(true);
     YogaNode root = createNode(config);
@@ -315,7 +316,7 @@ public class YogaNodeTest {
 
   @Test
   public void testResetApiShouldResetAllLayoutOutputs() {
-    YogaConfig config = new YogaConfig();
+    YogaConfig config = YogaConfigFactory.create();
     config.setShouldDiffLayoutWithoutLegacyStretchBehaviour(true);
     config.setUseLegacyStretchBehaviour(true);
     YogaNode node = createNode(config);

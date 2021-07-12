@@ -1,9 +1,10 @@
 /*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the MIT license found in the LICENSE
- * file in the root directory of this source tree.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 #include <yoga/Yoga.h>
 
 #include "./Node.hh"
@@ -11,13 +12,8 @@
 #include "./Size.hh"
 #include "./Value.hh"
 #include "./Config.hh"
-#include "./global.hh"
 
 #include <nbind/nbind.h>
-
-NBIND_GLOBAL() {
-  function(getInstanceCount);
-}
 
 NBIND_CLASS(Size) {
   construct<>();

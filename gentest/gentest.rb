@@ -1,15 +1,20 @@
 #!/usr/bin/env ruby
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 require 'watir'
 require 'fileutils'
 
-caps = Selenium::WebDriver::Remote::Capabilities.chrome(
-  "loggingPrefs"=>{
-    "browser"=>"ALL",
-    "performance"=>"ALL"
-  }
-)
-browser = Watir::Browser.new(:chrome, :desired_capabilities => caps, :switches => ['--force-device-scale-factor=1', '--window-position=0,0'])
+browser = Watir::Browser.new(:chrome, "goog:loggingPrefs" => {
+    "browser" => "ALL",
+    "performance" => "ALL"
+  },
+  "chromeOptions" => {
+    "w3c" => "false"
+  },
+  :switches => ['--force-device-scale-factor=1', '--window-position=0,0'])
 
 Dir.chdir(File.dirname($0))
 

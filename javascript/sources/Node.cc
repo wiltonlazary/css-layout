@@ -1,9 +1,10 @@
 /*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the MIT license found in the LICENSE
- * file in the root directory of this source tree.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 #include <algorithm>
 
 #include <yoga/Yoga.h>
@@ -22,8 +23,8 @@ static YGSize globalMeasureFunc(
   Node const& node = *reinterpret_cast<Node const*>(YGNodeGetContext(nodeRef));
 
   Size size = node.callMeasureFunc(width, widthMode, height, heightMode);
-  YGSize ygSize = {static_cast<float>(size.width),
-                   static_cast<float>(size.height)};
+  YGSize ygSize = {
+      static_cast<float>(size.width), static_cast<float>(size.height)};
 
   return ygSize;
 }

@@ -1,9 +1,10 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
- * This source code is licensed under the MIT license found in the LICENSE
- * file in the root directory of this source tree.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
+
 package com.facebook.yoga;
 
 import static org.junit.Assert.assertEquals;
@@ -190,7 +191,7 @@ public class YogaNodeStylePropertiesTest {
   public void testPositionTypeDefault() {
     final YogaNode node = createNode();
 
-    assertEquals(YogaPositionType.RELATIVE, node.getPositionType());
+    assertEquals(YogaPositionType.STATIC, node.getPositionType());
   }
 
   @Test
